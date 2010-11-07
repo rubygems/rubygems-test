@@ -17,7 +17,8 @@ Gem::Specification.new do |s|
      "README.rdoc"
   ]
   s.files = [
-    "lib/rubygems/commands/test_command.rb",
+    "Rakefile",
+     "lib/rubygems/commands/test_command.rb",
      "lib/rubygems_plugin.rb",
      "test/helper.rb"
   ]

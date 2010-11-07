@@ -10,7 +10,7 @@ begin
     gem.email = "erik@hollensbe.org"
     gem.homepage = "http://github.com/erikh/rubygems-test"
     gem.authors = ["Erik Hollensbe"]
-    gem.files = Dir["lib/**/*.rb"] + Dir["test/**/*.rb"]
+    gem.files = Dir["Rakefile"] + Dir["lib/**/*.rb"] + Dir["test/**/*.rb"]
     # gem is a Gem::Specification... see http://www.rubygems.org/read/chapter/20 for additional settings
   end
   Jeweler::GemcutterTasks.new
@@ -42,6 +42,7 @@ task :test => :check_dependencies
 
 task :default => :test
 
+desc "Test for rubygems-test"
 task :gemtest do
   puts "we're here!"
 end

@@ -43,9 +43,7 @@ task :test => :check_dependencies
 task :default => :test
 
 desc "Test for rubygems-test"
-task :gemtest do
-  puts "we're here!"
-end
+task :gemtest => :test
 
 require 'rake/rdoctask'
 Rake::RDocTask.new do |rdoc|

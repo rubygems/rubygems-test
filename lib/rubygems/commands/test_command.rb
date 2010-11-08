@@ -2,11 +2,13 @@ require 'rubygems/version_option'
 require 'rubygems/source_index'
 require 'rubygems/specification'
 require 'rubygems/dependency_installer'
+require 'rubygems/user_interaction'
 require 'fileutils'
 require 'rbconfig'
 
 class Gem::Commands::TestCommand < Gem::Command
   include Gem::VersionOption
+  include Gem::DefaultUserInteraction
 
   def description
     'Run the tests for a specific gem'
@@ -27,7 +29,7 @@ class Gem::Commands::TestCommand < Gem::Command
 
   #--
   # FIXME fix the error messages.
-  # FIXME get prompting for development dependencies working.
+  # FIXME refactor to not look like ass
   #++
   def execute
     version = options[:version] || Gem::Requirement.default
@@ -51,16 +53,23 @@ class Gem::Commands::TestCommand < Gem::Command
 
           config = Gem.configuration["test_options"] || { }
          
-          if config["install_development_dependencies"]
             di = Gem::DependencyInstaller.new
 
             spec.development_dependencies.each do |dep|
               unless gsi.search(dep).last
-                puts "Installing test dependency #{dep.name} (#{dep.requirement})"
-                di.install(dep) 
+                if config["install_development_dependencies"]
+                  puts "Installing test dependency #{dep.name} (#{dep.requirement})"
+                  di.install(dep) 
+                else
+                  if ui.ask_yes_no("Install development dependency #{dep.name} (#{dep.requirement})?")
+                    puts "Installing test dependency #{dep.name} (#{dep.requirement})"
+                    di.install(dep) 
+                  else
+                    throw "Failed to install dependencies to test. Aborting."
+                  end
+                end
               end
             end
-          end
 
           if config["use_rake_test"]
             system(File.join(rake_path, "rake"), 'test')

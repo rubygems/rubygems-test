@@ -41,51 +41,50 @@ class Gem::Commands::TestCommand < Gem::Command
       path = spec.full_gem_path
       rakefile = File.join(path, 'Rakefile')
 
-      if File.exists?(rakefile)
+      unless File.exist?(rakefile)
+        ui.alert_error "Couldn't find rakefile -- this gem cannot be tested." 
+        ui.terminate_interaction 1
+      end
 
-        $stderr.puts "Rakefile found: #{rakefile}"
+      rake_path = [Gem.bindir, Config::CONFIG["bindir"]].find { |x| File.exist?(File.join(x, "rake")) }
 
-        rake_path = [Gem.bindir, Config::CONFIG["bindir"]].find { |x| File.exists?(File.join(x, "rake")) }
+      unless rake_path
+        ui.alert_error "Couldn't find rake; rubygems-test will not work without it."
+        ui.terminate_interaction 1
+      end
 
-        if rake_path
+      FileUtils.chdir(path)
 
-          FileUtils.chdir(path)
+      config = Gem.configuration["test_options"] || { }
 
-          config = Gem.configuration["test_options"] || { }
-         
-            di = Gem::DependencyInstaller.new
+      di = Gem::DependencyInstaller.new
 
-            spec.development_dependencies.each do |dep|
-              unless gsi.search(dep).last
-                if config["install_development_dependencies"]
-                  puts "Installing test dependency #{dep.name} (#{dep.requirement})"
-                  di.install(dep) 
-                else
-                  if ui.ask_yes_no("Install development dependency #{dep.name} (#{dep.requirement})?")
-                    puts "Installing test dependency #{dep.name} (#{dep.requirement})"
-                    di.install(dep) 
-                  else
-                    throw "Failed to install dependencies to test. Aborting."
-                  end
-                end
-              end
-            end
-
-          if config["use_rake_test"]
-            system(File.join(rake_path, "rake"), 'test')
+      spec.development_dependencies.each do |dep|
+        unless gsi.search(dep).last
+          if config["install_development_dependencies"]
+            ui.say "Installing test dependency #{dep.name} (#{dep.requirement})"
+            di.install(dep) 
           else
-            system(File.join(rake_path, "rake"), 'gemtest')
+            if ui.ask_yes_no("Install development dependency #{dep.name} (#{dep.requirement})?")
+              ui.say "Installing test dependency #{dep.name} (#{dep.requirement})"
+              di.install(dep) 
+            else
+              ui.alert_error "Failed to install dependencies to test. Aborting."
+              ui.terminate_interaction 1
+            end
           end
-
-          if $?.exitstatus != 0
-            throw "Tests did not pass. Examine output, yo!"
-          end
-        else
-          throw "Couldn't find rake. Check yo' self foo." 
         end
+      end
 
+      if config["use_rake_test"]
+        system(File.join(rake_path, "rake"), 'test')
       else
-        throw "can't find rakefile"
+        system(File.join(rake_path, "rake"), 'gemtest')
+      end
+
+      if $?.exitstatus != 0
+        ui.alert_error "Tests did not pass. Examine the output and report it to the author!"
+        ui.terminate_interaction 1
       end
     end
   end

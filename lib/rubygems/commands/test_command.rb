@@ -57,8 +57,8 @@ class Gem::Commands::TestCommand < Gem::Command
   #
   # Locate the rakefile for a gem name and version
   #
-  def find_rakefile(name, version)
-    rakefile = File.join(find_gem(name, version).full_gem_path, 'Rakefile')
+  def find_rakefile(spec)
+    rakefile = File.join(spec.full_gem_path, 'Rakefile')
 
     unless File.exist?(rakefile)
       alert_error "Couldn't find rakefile -- this gem cannot be tested. Aborting." 
@@ -83,10 +83,10 @@ class Gem::Commands::TestCommand < Gem::Command
   #
   # Install development dependencies for the gem we're about to test.
   #
-  def install_dependencies(name, version)
+  def install_dependencies(spec)
     di = Gem::DependencyInstaller.new
 
-    find_gem(name, version).development_dependencies.each do |dep|
+    spec.development_dependencies.each do |dep|
       unless source_index.search(dep).last
         if config["install_development_dependencies"]
           say "Installing test dependency #{dep.name} (#{dep.requirement})"
@@ -104,7 +104,6 @@ class Gem::Commands::TestCommand < Gem::Command
     end
   end
 
-
   #
   # Execute routine. This is where the magic happens.
   #
@@ -112,14 +111,16 @@ class Gem::Commands::TestCommand < Gem::Command
     version = options[:version] || Gem::Requirement.default
 
     get_all_gem_names.each do |name|
+      spec = find_gem(name, version)
+
       # we find rake and the rakefile first to eliminate needlessly installing
       # dependencies.
-      find_rakefile(name, version)
+      find_rakefile(spec)
       rake_path = find_rake
 
-      install_dependencies(name, version)
+      install_dependencies(spec)
       
-      FileUtils.chdir(find_gem(name, version).full_gem_path)
+      FileUtils.chdir(spec.full_gem_path)
 
       if config["use_rake_test"]
         system(File.join(rake_path, "rake"), 'test')

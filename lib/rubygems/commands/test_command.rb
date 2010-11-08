@@ -42,15 +42,15 @@ class Gem::Commands::TestCommand < Gem::Command
       rakefile = File.join(path, 'Rakefile')
 
       unless File.exist?(rakefile)
-        ui.alert_error "Couldn't find rakefile -- this gem cannot be tested." 
-        ui.terminate_interaction 1
+        alert_error "Couldn't find rakefile -- this gem cannot be tested." 
+        terminate_interaction 1
       end
 
       rake_path = [Gem.bindir, Config::CONFIG["bindir"]].find { |x| File.exist?(File.join(x, "rake")) }
 
       unless rake_path
-        ui.alert_error "Couldn't find rake; rubygems-test will not work without it."
-        ui.terminate_interaction 1
+        alert_error "Couldn't find rake; rubygems-test will not work without it."
+        terminate_interaction 1
       end
 
       FileUtils.chdir(path)
@@ -62,15 +62,15 @@ class Gem::Commands::TestCommand < Gem::Command
       spec.development_dependencies.each do |dep|
         unless gsi.search(dep).last
           if config["install_development_dependencies"]
-            ui.say "Installing test dependency #{dep.name} (#{dep.requirement})"
+            say "Installing test dependency #{dep.name} (#{dep.requirement})"
             di.install(dep) 
           else
-            if ui.ask_yes_no("Install development dependency #{dep.name} (#{dep.requirement})?")
-              ui.say "Installing test dependency #{dep.name} (#{dep.requirement})"
+            if ask_yes_no("Install development dependency #{dep.name} (#{dep.requirement})?")
+              say "Installing test dependency #{dep.name} (#{dep.requirement})"
               di.install(dep) 
             else
-              ui.alert_error "Failed to install dependencies to test. Aborting."
-              ui.terminate_interaction 1
+              alert_error "Failed to install dependencies to test. Aborting."
+              terminate_interaction 1
             end
           end
         end
@@ -83,8 +83,8 @@ class Gem::Commands::TestCommand < Gem::Command
       end
 
       if $?.exitstatus != 0
-        ui.alert_error "Tests did not pass. Examine the output and report it to the author!"
-        ui.terminate_interaction 1
+        alert_error "Tests did not pass. Examine the output and report it to the author!"
+        terminate_interaction 1
       end
     end
   end

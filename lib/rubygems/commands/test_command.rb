@@ -27,10 +27,23 @@ class Gem::Commands::TestCommand < Gem::Command
     add_version_option
   end
 
+  #
+  # Retrieve the source index
+  #
   def source_index 
     @gsi ||= Gem::SourceIndex.from_gems_in(*Gem::SourceIndex.installed_spec_directories)
   end
+ 
+  #
+  # Get the config in our namespace
+  #
+  def config 
+    @config ||= Gem.configuration["test_options"] || { }
+  end
 
+  #
+  # find a gem given a name and version
+  #
   def find_gem(name, version)
     spec = source_index.find_name(name, version).last
     unless spec
@@ -41,6 +54,9 @@ class Gem::Commands::TestCommand < Gem::Command
     return spec
   end
 
+  #
+  # Locate the rakefile for a gem name and version
+  #
   def find_rakefile(name, version)
     rakefile = File.join(find_gem(name, version).full_gem_path, 'Rakefile')
 
@@ -50,6 +66,9 @@ class Gem::Commands::TestCommand < Gem::Command
     end
   end
 
+  #
+  # Locate rake itself, prefer gems version.
+  #
   def find_rake
     rake_path = [Gem.bindir, Config::CONFIG["bindir"]].find { |x| File.exist?(File.join(x, "rake")) }
 
@@ -61,10 +80,9 @@ class Gem::Commands::TestCommand < Gem::Command
     return rake_path
   end
 
-  def config 
-    @config ||= Gem.configuration["test_options"] || { }
-  end
-
+  #
+  # Install development dependencies for the gem we're about to test.
+  #
   def install_dependencies(name, version)
     di = Gem::DependencyInstaller.new
 
@@ -86,9 +104,10 @@ class Gem::Commands::TestCommand < Gem::Command
     end
   end
 
-  #--
-  # FIXME Use a proper Gem::Requirement or Gem::Dependency object here.
-  #++
+
+  #
+  # Execute routine. This is where the magic happens.
+  #
   def execute
     version = options[:version] || Gem::Requirement.default
 

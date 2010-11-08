@@ -27,54 +27,80 @@ class Gem::Commands::TestCommand < Gem::Command
     add_version_option
   end
 
+  def source_index 
+    @gsi ||= Gem::SourceIndex.from_gems_in(*Gem::SourceIndex.installed_spec_directories)
+  end
+
+  def find_gem(name, version)
+    spec = source_index.find_name(name, version).last
+    unless spec
+      alert_error "Could not find gem #{name} (#{version})"
+      terminate_interaction 1
+    end
+
+    return spec
+  end
+
+  def find_rakefile(name, version)
+    rakefile = File.join(find_gem(name, version).full_gem_path, 'Rakefile')
+
+    unless File.exist?(rakefile)
+      alert_error "Couldn't find rakefile -- this gem cannot be tested. Aborting." 
+      terminate_interaction 1
+    end
+  end
+
+  def find_rake
+    rake_path = [Gem.bindir, Config::CONFIG["bindir"]].find { |x| File.exist?(File.join(x, "rake")) }
+
+    unless rake_path
+      alert_error "Couldn't find rake; rubygems-test will not work without it. Aborting."
+      terminate_interaction 1
+    end
+
+    return rake_path
+  end
+
+  def config 
+    @config ||= Gem.configuration["test_options"] || { }
+  end
+
+  def install_dependencies(name, version)
+    di = Gem::DependencyInstaller.new
+
+    find_gem(name, version).development_dependencies.each do |dep|
+      unless source_index.search(dep).last
+        if config["install_development_dependencies"]
+          say "Installing test dependency #{dep.name} (#{dep.requirement})"
+          di.install(dep) 
+        else
+          if ask_yes_no("Install development dependency #{dep.name} (#{dep.requirement})?")
+            say "Installing test dependency #{dep.name} (#{dep.requirement})"
+            di.install(dep) 
+          else
+            alert_error "Failed to install dependencies required to run tests. Aborting."
+            terminate_interaction 1
+          end
+        end
+      end
+    end
+  end
+
   #--
-  # FIXME fix the error messages.
-  # FIXME refactor to not look like ass
+  # FIXME Use a proper Gem::Requirement or Gem::Dependency object here.
   #++
   def execute
     version = options[:version] || Gem::Requirement.default
 
-    gsi = Gem::SourceIndex.from_gems_in(*Gem::SourceIndex.installed_spec_directories)
     get_all_gem_names.each do |name|
-      spec = gsi.find_name(name, version).last
+      # we find rake and the rakefile first to eliminate needlessly installing
+      # dependencies.
+      find_rakefile(name, version)
+      rake_path = find_rake
 
-      path = spec.full_gem_path
-      rakefile = File.join(path, 'Rakefile')
-
-      unless File.exist?(rakefile)
-        alert_error "Couldn't find rakefile -- this gem cannot be tested." 
-        terminate_interaction 1
-      end
-
-      rake_path = [Gem.bindir, Config::CONFIG["bindir"]].find { |x| File.exist?(File.join(x, "rake")) }
-
-      unless rake_path
-        alert_error "Couldn't find rake; rubygems-test will not work without it."
-        terminate_interaction 1
-      end
-
-      FileUtils.chdir(path)
-
-      config = Gem.configuration["test_options"] || { }
-
-      di = Gem::DependencyInstaller.new
-
-      spec.development_dependencies.each do |dep|
-        unless gsi.search(dep).last
-          if config["install_development_dependencies"]
-            say "Installing test dependency #{dep.name} (#{dep.requirement})"
-            di.install(dep) 
-          else
-            if ask_yes_no("Install development dependency #{dep.name} (#{dep.requirement})?")
-              say "Installing test dependency #{dep.name} (#{dep.requirement})"
-              di.install(dep) 
-            else
-              alert_error "Failed to install dependencies to test. Aborting."
-              terminate_interaction 1
-            end
-          end
-        end
-      end
+      install_dependencies(name, version)
+      
+      FileUtils.chdir(find_gem(name, version).full_gem_path)
 
       if config["use_rake_test"]
         system(File.join(rake_path, "rake"), 'test')

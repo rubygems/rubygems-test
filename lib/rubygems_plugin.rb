@@ -1,4 +1,5 @@
 require 'rubygems/command_manager'
+require 'rubygems/on_install_test'
 
 # shamelessly taken from gemcutter.
 

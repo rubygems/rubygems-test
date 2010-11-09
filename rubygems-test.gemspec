@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Erik Hollensbe"]
-  s.date = %q{2010-11-07}
+  s.date = %q{2010-11-09}
   s.description = %q{Test gems on your system. Conform to a spec where awesomeness occurs. Edit this later.}
   s.email = %q{erik@hollensbe.org}
   s.extra_rdoc_files = [
@@ -19,6 +19,7 @@ Gem::Specification.new do |s|
   s.files = [
     "Rakefile",
      "lib/rubygems/commands/test_command.rb",
+     "lib/rubygems/on_install_test.rb",
      "lib/rubygems_plugin.rb",
      "test/helper.rb"
   ]

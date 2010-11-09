@@ -22,8 +22,15 @@ class Gem::Commands::TestCommand < Gem::Command
     "#{program_name} GEM -v VERSION"
   end
   
-  def initialize
-    super 'test', description
+  def initialize(spec=nil)
+    options = { } 
+
+    if spec
+      options[:name] = spec.name
+      options[:version] = spec.version
+    end
+
+    super 'test', description, options
     add_version_option
   end
 
@@ -110,7 +117,7 @@ class Gem::Commands::TestCommand < Gem::Command
   def execute
     version = options[:version] || Gem::Requirement.default
 
-    get_all_gem_names.each do |name|
+    (get_all_gem_names rescue [options[:name]]).each do |name|
       spec = find_gem(name, version)
 
       # we find rake and the rakefile first to eliminate needlessly installing

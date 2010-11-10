@@ -4,7 +4,9 @@ require 'rubygems/specification'
 require 'rubygems/dependency_installer'
 require 'rubygems/user_interaction'
 require 'fileutils'
+require 'pathname'
 require 'rbconfig'
+require 'yaml'
 
 class Gem::Commands::TestCommand < Gem::Command
   include Gem::VersionOption
@@ -110,6 +112,54 @@ class Gem::Commands::TestCommand < Gem::Command
       end
     end
   end
+  
+  def upload_results(yaml)
+    puts yaml
+  end
+
+  def gather_results(spec, output, result)
+    {
+      :arch         => Config::CONFIG["arch"],
+      :vendor       => Config::CONFIG["target_vendor"],
+      :os           => Config::CONFIG["target_os"],
+      :machine_arch => Config::CONFIG["target_cpu"],
+      :name         => spec.name,
+      :version      => spec.version,
+      :result       => result,
+      :test_output  => output
+    }.to_yaml
+  end
+
+  def run_tests(spec, rake_path)
+    FileUtils.chdir(spec.full_gem_path)
+
+    path = Pathname.new(rake_path) + "rake"
+    command = "gemtest"
+    output = ""
+
+    if config["use_rake_test"]
+      command = "test"
+    end
+
+    IO.popen("#{path} #{command}", 'r') do |f|
+      # FIXME maybe get IO.select involved here for regular output instead of
+      #       full buffering.
+      output = f.read
+    end
+
+    puts output
+
+    if config["upload_results"] or
+        ask_yes_no "Upload these results to rubyforge?"
+
+      upload_results(gather_results(spec, output, $?.exitstatus == 0))
+    end
+      
+    if $?.exitstatus != 0
+      alert_error "Tests did not pass. Examine the output and report it to the author!"
+      terminate_interaction 1
+    end
+  end
 
   #
   # Execute routine. This is where the magic happens.
@@ -126,19 +176,8 @@ class Gem::Commands::TestCommand < Gem::Command
       rake_path = find_rake
 
       install_dependencies(spec)
-      
-      FileUtils.chdir(spec.full_gem_path)
 
-      if config["use_rake_test"]
-        system(File.join(rake_path, "rake"), 'test')
-      else
-        system(File.join(rake_path, "rake"), 'gemtest')
-      end
-
-      if $?.exitstatus != 0
-        alert_error "Tests did not pass. Examine the output and report it to the author!"
-        terminate_interaction 1
-      end
+      run_tests(spec, rake_path)
     end
   end
 end

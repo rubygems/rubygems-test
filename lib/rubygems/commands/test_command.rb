@@ -8,6 +8,9 @@ require 'pathname'
 require 'rbconfig'
 require 'yaml'
 
+class Gem::TestError < Gem::Exception; end
+class Gem::RakeNotFoundError < Gem::Exception; end
+
 class Gem::Commands::TestCommand < Gem::Command
   include Gem::VersionOption
   include Gem::DefaultUserInteraction
@@ -24,13 +27,15 @@ class Gem::Commands::TestCommand < Gem::Command
     "#{program_name} GEM -v VERSION"
   end
   
-  def initialize(spec=nil)
+  def initialize(spec=nil, on_install=false)
     options = { } 
 
     if spec
       options[:name] = spec.name
       options[:version] = spec.version
     end
+
+    @on_install = on_install
 
     super 'test', description, options
     add_version_option
@@ -57,7 +62,7 @@ class Gem::Commands::TestCommand < Gem::Command
     spec = source_index.find_name(name, version).last
     unless spec
       alert_error "Could not find gem #{name} (#{version})"
-      terminate_interaction 1
+      raise Gem::GemNotFoundException
     end
 
     return spec
@@ -71,7 +76,7 @@ class Gem::Commands::TestCommand < Gem::Command
 
     unless File.exist?(rakefile)
       alert_error "Couldn't find rakefile -- this gem cannot be tested. Aborting." 
-      terminate_interaction 1
+      raise Gem::RakeNotFoundError
     end
   end
 
@@ -83,7 +88,7 @@ class Gem::Commands::TestCommand < Gem::Command
 
     unless rake_path
       alert_error "Couldn't find rake; rubygems-test will not work without it. Aborting."
-      terminate_interaction 1
+      raise Gem::RakeNotFoundError
     end
 
     return rake_path
@@ -106,7 +111,7 @@ class Gem::Commands::TestCommand < Gem::Command
             di.install(dep) 
           else
             alert_error "Failed to install dependencies required to run tests. Aborting."
-            terminate_interaction 1
+            raise Gem::TestError
           end
         end
       end
@@ -157,7 +162,7 @@ class Gem::Commands::TestCommand < Gem::Command
       
     if $?.exitstatus != 0
       alert_error "Tests did not pass. Examine the output and report it to the author!"
-      terminate_interaction 1
+      raise Gem::TestError
     end
   end
 
@@ -165,19 +170,27 @@ class Gem::Commands::TestCommand < Gem::Command
   # Execute routine. This is where the magic happens.
   #
   def execute
-    version = options[:version] || Gem::Requirement.default
+    begin
+      version = options[:version] || Gem::Requirement.default
 
-    (get_all_gem_names rescue [options[:name]]).each do |name|
-      spec = find_gem(name, version)
+      (get_all_gem_names rescue [options[:name]]).each do |name|
+        spec = find_gem(name, version)
 
-      # we find rake and the rakefile first to eliminate needlessly installing
-      # dependencies.
-      find_rakefile(spec)
-      rake_path = find_rake
+        # we find rake and the rakefile first to eliminate needlessly installing
+        # dependencies.
+        find_rakefile(spec)
+        rake_path = find_rake
 
-      install_dependencies(spec)
+        install_dependencies(spec)
 
-      run_tests(spec, rake_path)
+        run_tests(spec, rake_path)
+      end
+    rescue Exception => e 
+      if @on_install
+        raise e
+      else
+        terminate_interaction 1
+      end
     end
   end
 end

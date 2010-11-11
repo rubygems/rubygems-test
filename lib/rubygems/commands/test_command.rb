@@ -16,6 +16,9 @@ class Gem::Commands::TestCommand < Gem::Command
   include Gem::VersionOption
   include Gem::DefaultUserInteraction
 
+  # taken straight out of rake
+  DEFAULT_RAKEFILES = ['rakefile', 'Rakefile', 'rakefile.rb', 'Rakefile.rb'].freeze
+
   def description
     'Run the tests for a specific gem'
   end
@@ -73,7 +76,9 @@ class Gem::Commands::TestCommand < Gem::Command
   # Locate the rakefile for a gem name and version
   #
   def find_rakefile(spec)
-    rakefile = File.join(spec.full_gem_path, 'Rakefile')
+    rakefile = DEFAULT_RAKEFILES.
+      map  { |x| File.join(spec.full_gem_path, x) }.
+      find { |x| File.exist?(x) }
 
     unless File.exist?(rakefile)
       alert_error "Couldn't find rakefile -- this gem cannot be tested. Aborting." 
@@ -85,7 +90,7 @@ class Gem::Commands::TestCommand < Gem::Command
   # Locate rake itself, prefer gems version.
   #
   def find_rake
-    rake_path = Gem.bin_path('rake') || File.join(CONFIG::Config["bindir"], 'rake')
+    rake_path = Gem.bin_path('rake') || File.join(RbConfig::CONFIG["bindir"], 'rake')
 
     unless File.exist?(rake_path)
       alert_error "Couldn't find rake; rubygems-test will not work without it. Aborting."
@@ -125,10 +130,10 @@ class Gem::Commands::TestCommand < Gem::Command
 
   def gather_results(spec, output, result)
     {
-      :arch         => Config::CONFIG["arch"],
-      :vendor       => Config::CONFIG["target_vendor"],
-      :os           => Config::CONFIG["target_os"],
-      :machine_arch => Config::CONFIG["target_cpu"],
+      :arch         => RbConfig::CONFIG["arch"],
+      :vendor       => RbConfig::CONFIG["target_vendor"],
+      :os           => RbConfig::CONFIG["target_os"],
+      :machine_arch => RbConfig::CONFIG["target_cpu"],
       :name         => spec.name,
       :version      => spec.version,
       :result       => result,
@@ -158,7 +163,7 @@ class Gem::Commands::TestCommand < Gem::Command
         handles, _, _ = IO.select([stdout, stderr].reject { |x| x.closed? || x.eof? }, nil, nil, 0.1)
 
         begin
-          handles.each { |io| io.readpartial(10000, buf) } if handles
+          handles.each { |io| io.readpartial(16384, buf) } if handles
         rescue EOFError, IOError
           next
         end

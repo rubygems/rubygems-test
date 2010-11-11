@@ -85,9 +85,9 @@ class Gem::Commands::TestCommand < Gem::Command
   # Locate rake itself, prefer gems version.
   #
   def find_rake
-    rake_path = [Gem.bindir, Config::CONFIG["bindir"]].find { |x| File.exist?(File.join(x, "rake")) }
+    rake_path = Gem.bin_path('rake') || File.join(CONFIG::Config["bindir"], 'rake')
 
-    unless rake_path
+    unless File.exist?(rake_path)
       alert_error "Couldn't find rake; rubygems-test will not work without it. Aborting."
       raise Gem::RakeNotFoundError
     end
@@ -139,7 +139,6 @@ class Gem::Commands::TestCommand < Gem::Command
   def run_tests(spec, rake_path)
     FileUtils.chdir(spec.full_gem_path)
 
-    path = File.join(rake_path, "rake")
     command = "gemtest"
     output = ""
     exit_status = nil
@@ -148,7 +147,7 @@ class Gem::Commands::TestCommand < Gem::Command
       command = "test"
     end
 
-    Open3.popen3(path, command) do |stdin, stdout, stderr, thr|
+    Open3.popen3(rake_path, command) do |stdin, stdout, stderr, thr|
       loop do
         if stdout.eof? and stderr.eof?
           break

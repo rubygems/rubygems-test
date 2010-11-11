@@ -1,4 +1,3 @@
-require 'rubygems'
 require 'rubygems/uninstaller'
 require 'rubygems/commands/test_command'
 

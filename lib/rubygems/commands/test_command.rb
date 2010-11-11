@@ -7,6 +7,7 @@ require 'fileutils'
 require 'pathname'
 require 'rbconfig'
 require 'yaml'
+require 'open3'
 
 class Gem::TestError < Gem::Exception; end
 class Gem::RakeNotFoundError < Gem::Exception; end
@@ -138,29 +139,46 @@ class Gem::Commands::TestCommand < Gem::Command
   def run_tests(spec, rake_path)
     FileUtils.chdir(spec.full_gem_path)
 
-    path = Pathname.new(rake_path) + "rake"
+    path = File.join(rake_path, "rake")
     command = "gemtest"
     output = ""
+    exit_status = nil
 
     if config["use_rake_test"]
       command = "test"
     end
 
-    IO.popen("#{path} #{command}", 'r') do |f|
-      # FIXME maybe get IO.select involved here for regular output instead of
-      #       full buffering.
-      output = f.read
-    end
+    Open3.popen3(path, command) do |stdin, stdout, stderr, thr|
+      loop do
+        if stdout.eof? and stderr.eof?
+          break
+        end
 
-    puts output
+        buf = ""
+
+        handles, _, _ = IO.select([stdout, stderr].reject { |x| x.closed? || x.eof? }, nil, nil, 0.1)
+
+        begin
+          handles.each { |io| io.readpartial(10000, buf) } if handles
+        rescue EOFError, IOError
+          next
+        end
+
+        output += buf
+        
+        print buf
+      end
+
+      exit_status = thr.value
+    end
 
     if config["upload_results"] or
         ask_yes_no "Upload these results to rubyforge?"
 
-      upload_results(gather_results(spec, output, $?.exitstatus == 0))
+      upload_results(gather_results(spec, output, exit_status.exitstatus == 0))
     end
       
-    if $?.exitstatus != 0
+    if exit_status.exitstatus != 0
       alert_error "Tests did not pass. Examine the output and report it to the author!"
       raise Gem::TestError
     end

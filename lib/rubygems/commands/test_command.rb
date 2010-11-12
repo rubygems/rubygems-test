@@ -8,6 +8,8 @@ require 'pathname'
 require 'rbconfig'
 require 'yaml'
 require 'open3'
+require 'net/http'
+require 'uri'
 
 class Gem::TestError < Gem::Exception; end
 class Gem::RakeNotFoundError < Gem::Exception; end
@@ -120,7 +122,7 @@ class Gem::Commands::TestCommand < Gem::Command
   end
   
   def upload_results(yaml)
-    puts yaml
+    response = Net::HTTP.post_form URI.parse('http://localhost:3000/test_results'), {:results => yaml}
   end
 
   def gather_results(spec, output, result)

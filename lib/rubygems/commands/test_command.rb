@@ -53,7 +53,7 @@ class Gem::Commands::TestCommand < Gem::Command
   def source_index 
     @gsi ||= Gem::SourceIndex.from_gems_in(*Gem::SourceIndex.installed_spec_directories)
   end
- 
+  
   #
   # Get the config in our namespace
   #
@@ -126,8 +126,32 @@ class Gem::Commands::TestCommand < Gem::Command
     end
   end
   
-  def upload_results(yaml)
-    response = Net::HTTP.post_form URI.parse('http://localhost:3000/test_results'), {:results => yaml}
+  def upload_results(yaml, results_url='http://localhost:3000/test_results')
+    begin
+      url = URI.parse(results_url)
+      response = Net::HTTP.post_form url, {:results => yaml}
+    rescue Errno::ECONNREFUSED => e
+      say 'Unable to post test results. Can\'t connect to the results server.'
+    rescue => e
+      say e.message
+    else
+      case response
+      when Net::HTTPSuccess
+        body = YAML::load(response.body)
+        url = body[:data][0] if body[:data]
+        say "Test results posted successfully! \n\t#{url}"
+      when Net::HTTPRedirection
+        upload_results yaml, response.fetch('location')
+      when Net::HTTPNotFound
+        say 'Unable to find where to put the test results. Try: `gem update rubygem-test`'
+      when Net::HTTPClientError
+        say 'Results server didn\'t like the results submission. Try: `gem update rubygem-test`'
+      when Net::HTTPServerError
+        say 'Oof. Something went wrong on the results server processing these results. Sorry!'
+      else
+        say 'Something weird happened. Probably a bug.'
+      end
+    end
   end
 
   def gather_results(spec, output, result)
@@ -183,7 +207,7 @@ class Gem::Commands::TestCommand < Gem::Command
 
       upload_results(gather_results(spec, output, exit_status.exitstatus == 0))
     end
-      
+    
     if exit_status.exitstatus != 0
       alert_error "Tests did not pass. Examine the output and report it to the author!"
       raise Gem::TestError

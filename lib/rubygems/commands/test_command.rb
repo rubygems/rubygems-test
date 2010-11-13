@@ -82,7 +82,7 @@ class Gem::Commands::TestCommand < Gem::Command
       map  { |x| File.join(spec.full_gem_path, x) }.
       find { |x| File.exist?(x) }
 
-    unless File.exist?(rakefile)
+    unless File.exist?(rakefile || "")
       alert_error "Couldn't find rakefile -- this gem cannot be tested. Aborting." 
       raise Gem::RakeNotFoundError
     end

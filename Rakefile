@@ -6,7 +6,7 @@ begin
   Jeweler::Tasks.new do |gem|
     gem.name = "rubygems-test"
     gem.summary = %Q{Gem testing facility as a plugin}
-    gem.description = %Q{Test gems on your system. Conform to a spec where awesomeness occurs. Edit this later.}
+    gem.description = %Q{Test gems on your system, upload the data to a service. Uninstall failing gems.}
     gem.email = "erik@hollensbe.org"
     gem.homepage = "http://github.com/erikh/rubygems-test"
     gem.authors = ["Erik Hollensbe"]

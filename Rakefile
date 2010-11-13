@@ -6,7 +6,7 @@ begin
   Jeweler::Tasks.new do |gem|
     gem.name = "rubygems-test"
     gem.summary = %Q{Gem testing facility as a plugin}
-    gem.description = %Q{Test gems on your system. Conform to a spec where awesomeness occurs. Edit this later.}
+    gem.description = %Q{Test gems on your system, upload the data to a service. Uninstall failing gems.}
     gem.email = "erik@hollensbe.org"
     gem.homepage = "http://github.com/erikh/rubygems-test"
     gem.authors = ["Erik Hollensbe"]
@@ -19,9 +19,15 @@ rescue LoadError
 end
 
 require 'rake/testtask'
+Rake::TestTask.new(:gemtest) do |test|
+  test.libs << 'lib' << 'test'
+  test.test_files = Dir["test/test_*.rb"]
+  test.verbose = true
+end
+
 Rake::TestTask.new(:test) do |test|
   test.libs << 'lib' << 'test'
-  test.pattern = 'test/**/test_*.rb'
+  test.test_files = Dir["test/test_*.rb"] + Dir["test/interactive_test_*.rb"]
   test.verbose = true
 end
 
@@ -41,9 +47,6 @@ end
 task :test => :check_dependencies
 
 task :default => :test
-
-desc "Test for rubygems-test"
-task :gemtest => :test
 
 require 'rake/rdoctask'
 Rake::RDocTask.new do |rdoc|

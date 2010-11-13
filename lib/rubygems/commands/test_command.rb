@@ -82,7 +82,7 @@ class Gem::Commands::TestCommand < Gem::Command
       map  { |x| File.join(spec.full_gem_path, x) }.
       find { |x| File.exist?(x) }
 
-    unless File.exist?(rakefile)
+    unless File.exist?(rakefile || "")
       alert_error "Couldn't find rakefile -- this gem cannot be tested. Aborting." 
       raise Gem::RakeNotFoundError
     end
@@ -203,7 +203,7 @@ class Gem::Commands::TestCommand < Gem::Command
     end
 
     if config["upload_results"] or
-        ask_yes_no "Upload these results to rubyforge?"
+        (!config.has_key?("upload_results") and ask_yes_no "Upload these results to rubyforge?")
 
       upload_results(gather_results(spec, output, exit_status.exitstatus == 0))
     end

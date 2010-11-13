@@ -25,6 +25,8 @@ class Test::Unit::TestCase
     spec = eval File.read(path)
     filename = Gem::Builder.new(spec).build
     Gem::Installer.new(filename).install
+
+    FileUtils.chdir(pwd)
   end
 
   def template_gemspec(hash)
@@ -35,7 +37,7 @@ class Test::Unit::TestCase
       @development_dependencies += "s.add_development_dependency '#{dep}'\n"
     end
 
-    @files = hash[:test_files] || "'Rakefile', Dir['test/**/*']"
+    @files = hash[:files] || "'Rakefile', Dir['test/**/*']"
 
     if @files.kind_of?(Array)
       @files = @files.map { |x| "'#{x}'" }.join(",\n")

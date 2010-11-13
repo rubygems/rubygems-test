@@ -1,6 +1,43 @@
-= rubygems-test
+= rubygems-test - commands and facilities for automated rubygems testing.
 
-Description goes here.
+== For users
+
+This installs three major features:
+
+* a 'gem test' command.
+* the ability to test your gems on installation, and uninstall them if they fail testing.
+* A facility to upload your test results to rubygems.org (coming soon, see http://github.com/bluepojo/gem-testers)
+
+=== .gemrc
+
+You can insert several things in your .gemrc to make things simpler. These all
+live in the 'test_options' subsection, e.g.:
+
+  test_options:
+    use_rake_test: false
+    auto_test_on_install: true 
+    test_on_install: true 
+    install_development_dependencies: true
+    upload_results: false
+
+All options are *false* by default. For some of them, if the value is unknown
+or +false+, you will be prompted when it is required for testing.
+
+The options:
+
+use_rake_test:: uses +rake test+ instead of +rake gemtest+ (see below). Potentially dangerous, do not use for more than testing. 
+auto_test_on_install:: runs the unit tests when 'gem install' is invoked.
+test_on_install:: offer to test on install in general. +auto_test_on_install+ overrides this.
+install_development_dependencies:: automatically install the development dependencies when testing. This is recommended.
+upload_results:: upload results to http://rubygems.org. Incomplete feature as of this writing.
+
+== For gem developers
+
+Want your gem to be testable? 
+
+* Create a +gemtest+ target that runs all or a subset of your tests that can be consumed by any user without any additional configuration.
+* Be sure to include your Rakefile in your gem, along with your tests.
+* Be sure to note any development dependencies that will be required for executing your rakefile and your tests. They will be installed as a part of the testing process.  
 
 == Note on Patches/Pull Requests
  
@@ -14,4 +51,4 @@ Description goes here.
 
 == Copyright
 
-Copyright (c) 2010 Erik Hollensbe. See LICENSE for details.
+Copyright (c) 2010 Erik Hollensbe and Josiah Kiehl. See LICENSE for details.

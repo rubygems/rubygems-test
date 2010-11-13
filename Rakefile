@@ -19,9 +19,15 @@ rescue LoadError
 end
 
 require 'rake/testtask'
+Rake::TestTask.new(:gemtest) do |test|
+  test.libs << 'lib' << 'test'
+  test.test_files = Dir["test/test_*.rb"]
+  test.verbose = true
+end
+
 Rake::TestTask.new(:test) do |test|
   test.libs << 'lib' << 'test'
-  test.pattern = 'test/**/test_*.rb'
+  test.test_files = Dir["test/test_*.rb"] + Dir["test/interactive_test_*.rb"]
   test.verbose = true
 end
 
@@ -41,9 +47,6 @@ end
 task :test => :check_dependencies
 
 task :default => :test
-
-desc "Test for rubygems-test"
-task :gemtest => :test
 
 require 'rake/rdoctask'
 Rake::RDocTask.new do |rdoc|

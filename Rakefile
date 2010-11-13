@@ -9,7 +9,7 @@ begin
     gem.description = %Q{Test gems on your system, upload the data to a service. Uninstall failing gems.}
     gem.email = "erik@hollensbe.org"
     gem.homepage = "http://github.com/erikh/rubygems-test"
-    gem.authors = ["Erik Hollensbe"]
+    gem.authors = ["Erik Hollensbe", "Josiah Kiehl"]
     gem.files = Dir["Rakefile"] + Dir["lib/**/*.rb"] + Dir["test/**/*.rb"]
     # gem is a Gem::Specification... see http://www.rubygems.org/read/chapter/20 for additional settings
   end

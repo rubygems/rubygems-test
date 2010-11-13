@@ -9,6 +9,7 @@ require 'fileutils'
 $LOAD_PATH.unshift(File.dirname(__FILE__))
 $LOAD_PATH.unshift(File.join(File.dirname(__FILE__), '..', 'lib'))
 
+require 'rubygems/on_install_test'
 require 'rubygems/commands/test_command'
 
 class Test::Unit::TestCase
@@ -41,5 +42,14 @@ class Test::Unit::TestCase
     end
 
     return erb.result(binding)
+  end
+
+  def set_configuration(hash)
+    Gem.configuration["test_options"] = hash
+    Gem.configuration.verbose = false
+  end
+
+  def setup
+    set_configuration({ })
   end
 end

@@ -15,6 +15,7 @@ Gem::Specification.new do |s|
   s.require_paths = ["lib"]
   s.rubygems_version = %q{1.3.7}
   s.summary = %q{Gem testing facility as a plugin}
+  s.rubyforge_project = %q[foo]
 
   <%= @development_dependencies %>
 

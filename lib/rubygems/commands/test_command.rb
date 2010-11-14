@@ -162,6 +162,7 @@ class Gem::Commands::TestCommand < Gem::Command
       :machine_arch => RbConfig::CONFIG["target_cpu"],
       :name         => spec.name,
       :version      => spec.version,
+      :platform     => spec.platform,
       :ruby_version => RUBY_VERSION,
       :result       => result,
       :test_output  => output

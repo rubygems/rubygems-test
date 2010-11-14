@@ -51,7 +51,7 @@ class Gem::Commands::TestCommand < Gem::Command
   # Retrieve the source index
   #
   def source_index 
-    @gsi ||= Gem::SourceIndex.from_gems_in(*Gem::SourceIndex.installed_spec_directories)
+    @gsi = Gem::SourceIndex.from_gems_in(*Gem::SourceIndex.installed_spec_directories)
   end
   
   #
@@ -66,9 +66,9 @@ class Gem::Commands::TestCommand < Gem::Command
   #
   def find_gem(name, version)
     spec = source_index.find_name(name, version).last
-    unless spec
+    unless spec and (spec.installation_path rescue nil)
       alert_error "Could not find gem #{name} (#{version})"
-      raise Gem::GemNotFoundException
+      raise Gem::GemNotFoundException, "Could not find gem #{name}, (#{version})"
     end
 
     return spec
@@ -84,7 +84,7 @@ class Gem::Commands::TestCommand < Gem::Command
 
     unless File.exist?(rakefile || "")
       alert_error "Couldn't find rakefile -- this gem cannot be tested. Aborting." 
-      raise Gem::RakeNotFoundError
+      raise Gem::RakeNotFoundError, "Couldn't find rakefile, gem #{spec.name} (#{spec.version}) cannot be tested."
     end
   end
 
@@ -96,7 +96,7 @@ class Gem::Commands::TestCommand < Gem::Command
 
     unless File.exist?(rake_path)
       alert_error "Couldn't find rake; rubygems-test will not work without it. Aborting."
-      raise Gem::RakeNotFoundError
+      raise Gem::RakeNotFoundError, "Couldn't find rake; rubygems-test will not work without it."
     end
 
     return rake_path

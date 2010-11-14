@@ -1,6 +1,7 @@
 require 'rubygems'
 require 'rubygems/builder'
 require 'rubygems/installer'
+require 'rubygems/uninstaller'
 require 'test/unit'
 require 'erb'
 require 'tempfile'
@@ -9,7 +10,6 @@ require 'fileutils'
 $LOAD_PATH.unshift(File.dirname(__FILE__))
 $LOAD_PATH.unshift(File.join(File.dirname(__FILE__), '..', 'lib'))
 
-require 'rubygems/on_install_test'
 require 'rubygems/commands/test_command'
 
 class Test::Unit::TestCase
@@ -27,6 +27,10 @@ class Test::Unit::TestCase
     Gem::Installer.new(filename).install
 
     FileUtils.chdir(pwd)
+  end
+
+  def uninstall_stub_gem
+    Gem::Uninstaller.new("test-gem").uninstall
   end
 
   def template_gemspec(hash)
@@ -53,5 +57,16 @@ class Test::Unit::TestCase
 
   def setup
     set_configuration({ })
+  end
+end
+
+class Test::Unit::TestCase::Interactive < Test::Unit::TestCase
+  def setup
+    super
+
+    require 'rubygems/on_install_test'
+    puts
+    puts "----- This test is interactive -----"
+    puts
   end
 end

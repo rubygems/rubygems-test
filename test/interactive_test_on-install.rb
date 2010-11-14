@@ -1,14 +1,6 @@
 require 'helper'
 
-class TestRubyGemsOnInstallTest < Test::Unit::TestCase
-
-  def setup
-    super
-    puts
-    puts "----- This test is interactive -----"
-    puts
-  end
-
+class TestRubyGemsOnInstallTest < Test::Unit::TestCase::Interactive
   def test_01_successfully_uninstalls_on_test_failure
     set_configuration({ "force_uninstall_on_failure" => true, "auto_test_on_install" => true })
     install_stub_gem(:files => [])

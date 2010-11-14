@@ -141,15 +141,15 @@ class Gem::Commands::TestCommand < Gem::Command
         url = body[:data][0] if body[:data]
         say "Test results posted successfully! \n\t#{url}"
       when Net::HTTPRedirection
-        upload_results yaml, response.fetch('location')
+        upload_results yaml, response.fetch('Location')
       when Net::HTTPNotFound
-        say 'Unable to find where to put the test results. Try: `gem update rubygem-test`'
+        say %q[Unable to find where to put the test results. Try: `gem update rubygems-test`]
       when Net::HTTPClientError
-        say 'Results server didn\'t like the results submission. Try: `gem update rubygem-test`'
+        say %q[Results server didn't like the results submission. Try: `gem update rubygems-test`]
       when Net::HTTPServerError
-        say 'Oof. Something went wrong on the results server processing these results. Sorry!'
+        say %q[Oof. Something went wrong on the results server processing these results. Sorry!]
       else
-        say 'Something weird happened. Probably a bug.'
+        say %q[Something weird happened. Probably a bug.]
       end
     end
   end

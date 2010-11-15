@@ -10,7 +10,7 @@ begin
     gem.email = "erik@hollensbe.org"
     gem.homepage = "http://github.com/erikh/rubygems-test"
     gem.authors = ["Erik Hollensbe", "Josiah Kiehl"]
-    gem.files = Dir["Rakefile"] + Dir["lib/**/*.rb"] + Dir["test/**/*.rb"]
+    gem.files = Dir["Rakefile"] + Dir["gems/**/*"] + Dir["lib/**/*.rb"] + Dir["test/**/*.rb"]
     # gem is a Gem::Specification... see http://www.rubygems.org/read/chapter/20 for additional settings
     #
     gem.add_dependency 'rake'

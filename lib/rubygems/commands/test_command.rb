@@ -82,7 +82,7 @@ class Gem::Commands::TestCommand < Gem::Command
       map  { |x| File.join(spec.full_gem_path, x) }.
       find { |x| File.exist?(x) }
 
-    unless File.exist?(rakefile || "")
+    unless(File.exist?(rakefile) rescue nil)
       alert_error "Couldn't find rakefile -- this gem cannot be tested. Aborting." 
       raise Gem::RakeNotFoundError, "Couldn't find rakefile, gem #{spec.name} (#{spec.version}) cannot be tested."
     end
@@ -125,7 +125,11 @@ class Gem::Commands::TestCommand < Gem::Command
       end
     end
   end
-  
+ 
+  #
+  # Upload +yaml+ Results to +results_url+.
+  #
+
   def upload_results(yaml, results_url='http://localhost:3000/test_results')
     begin
       url = URI.parse(results_url)
@@ -154,6 +158,9 @@ class Gem::Commands::TestCommand < Gem::Command
     end
   end
 
+  #
+  # Gather system results, test results into a YAML format ready for delivery.
+  #
   def gather_results(spec, output, result)
     {
       :arch         => RbConfig::CONFIG["arch"],
@@ -169,6 +176,11 @@ class Gem::Commands::TestCommand < Gem::Command
     }.to_yaml
   end
 
+
+  #
+  # Run the tests with the appropriate spec and rake_path, and capture all
+  # output.
+  #
   def run_tests(spec, rake_path)
     FileUtils.chdir(spec.full_gem_path)
 

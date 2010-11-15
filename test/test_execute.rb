@@ -1,8 +1,10 @@
 require 'helper'
+require 'rbconfig'
+require 'yaml'
 
 class TestExecute < Test::Unit::TestCase
   def setup
-    set_configuration({ })
+    super
     @test = Gem::Commands::TestCommand.new
   end
 
@@ -50,5 +52,34 @@ class TestExecute < Test::Unit::TestCase
     assert_raises(Gem::RakeNotFoundError) { @test.find_rakefile(@test.find_gem("test-gem", "0.0.0")) }
 
     uninstall_stub_gem
+  end
+
+  def test_06_find_rake
+    # XXX how do I test this fully without nuking rake?
+    assert_nothing_raised { @test.find_rake }
+    assert_not_nil @test.find_rake
+  end
+
+  def test_07_gather_results
+    install_stub_gem({})
+
+    spec = @test.find_gem("test-gem", "0.0.0")
+    output = "foo"
+
+    hash = {
+      :arch         => RbConfig::CONFIG["arch"],
+      :vendor       => RbConfig::CONFIG["target_vendor"],
+      :os           => RbConfig::CONFIG["target_os"],
+      :machine_arch => RbConfig::CONFIG["target_cpu"],
+      :ruby_version => RUBY_VERSION,
+      :result       => true,
+      :name         => spec.name,
+      :version      => spec.version,
+      :platform     => spec.platform,
+      :test_output  => output
+    }
+
+
+    assert_equal YAML.load(@test.gather_results(spec, output, true)), hash
   end
 end

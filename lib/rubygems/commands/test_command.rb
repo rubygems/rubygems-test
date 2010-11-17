@@ -10,6 +10,7 @@ require 'yaml'
 require 'open3'
 require 'net/http'
 require 'uri'
+require 'ostruct'
 
 class Gem::TestError < Gem::Exception; end
 class Gem::RakeNotFoundError < Gem::Exception; end
@@ -192,39 +193,50 @@ class Gem::Commands::TestCommand < Gem::Command
       command = "test"
     end
 
-    Open3.popen3(rake_path, command, '--trace') do |stdin, stdout, stderr, thr|
-      loop do
-        if stdout.eof? and stderr.eof?
-          break
+    require 'rake'
+    ra = Rake::Application.new
+   
+    ra.instance_variable_set(:@options, OpenStruct.new)
+    ra.options.rakelib = []
+    ra.load_rakefile
+
+    task = Rake::Task["gemtest"] rescue nil
+
+    if task 
+      Open3.popen3(rake_path, command, '--trace') do |stdin, stdout, stderr, thr|
+        loop do
+          if stdout.eof? and stderr.eof?
+            break
+          end
+
+          buf = ""
+
+          handles, _, _ = IO.select([stdout, stderr].reject { |x| x.closed? || x.eof? }, nil, nil, 0.1)
+
+          begin
+            handles.each { |io| io.readpartial(16384, buf) } if handles
+          rescue EOFError, IOError
+            next
+          end
+
+          output += buf
+
+          print buf
         end
 
-        buf = ""
-
-        handles, _, _ = IO.select([stdout, stderr].reject { |x| x.closed? || x.eof? }, nil, nil, 0.1)
-
-        begin
-          handles.each { |io| io.readpartial(16384, buf) } if handles
-        rescue EOFError, IOError
-          next
-        end
-
-        output += buf
-        
-        print buf
+        exit_status = thr.value
       end
 
-      exit_status = thr.value
-    end
-
-    if config["upload_results"] or
+      if config["upload_results"] or
         (!config.has_key?("upload_results") and ask_yes_no "Upload these results to rubyforge?")
 
-      upload_results(gather_results(spec, output, exit_status.exitstatus == 0))
-    end
-    
-    if exit_status.exitstatus != 0
-      alert_error "Tests did not pass. Examine the output and report it to the author!"
-      raise Gem::TestError
+        upload_results(gather_results(spec, output, exit_status.exitstatus == 0))
+      end
+
+      if exit_status.exitstatus != 0
+        alert_error "Tests did not pass. Examine the output and report it to the author!"
+        raise Gem::TestError
+      end
     end
   end
 

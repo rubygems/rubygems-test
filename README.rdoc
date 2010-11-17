@@ -27,7 +27,6 @@ or +false+, you will be prompted when it is required for testing.
 
 The options:
 
-use_rake_test:: uses 'rake test' instead of 'rake gemtest' (see below). Potentially dangerous, do not use for more than testing. 
 auto_test_on_install:: runs the unit tests when 'gem install' is invoked.
 test_on_install:: offer to test on install in general. 'auto_test_on_install' overrides this.
 install_development_dependencies:: automatically install the development dependencies when testing. This is recommended.
@@ -39,7 +38,8 @@ force_uninstall_on_failure:: force uninstall when tests fail.
 
 Want your gem to be testable? 
 
-* Create a +gemtest+ Rake target that runs all or a subset of your tests that can be consumed by any user without any additional configuration.
+* Create (and add to your files section in your specification!) a +.gemtest+ empty file.
+* Ensure 'rake test' works and doesn't wipe out filesystems, databases, etc. Move those tests to another task.
 * Be sure to include your Rakefile in your gem, along with your tests.
 * Be sure to note any development dependencies that will be required for executing your rakefile and your tests in your gemspec. They will be installed as a part of the testing process.  
 

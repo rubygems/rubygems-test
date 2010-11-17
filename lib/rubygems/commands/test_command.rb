@@ -185,25 +185,11 @@ class Gem::Commands::TestCommand < Gem::Command
   def run_tests(spec, rake_path)
     FileUtils.chdir(spec.full_gem_path)
 
-    command = "gemtest"
     output = ""
     exit_status = nil
 
-    if config["use_rake_test"]
-      command = "test"
-    end
-
-    require 'rake'
-    ra = Rake::Application.new
-   
-    ra.instance_variable_set(:@options, OpenStruct.new)
-    ra.options.rakelib = []
-    ra.load_rakefile
-
-    task = Rake::Task["gemtest"] rescue nil
-
-    if task 
-      Open3.popen3(rake_path, command, '--trace') do |stdin, stdout, stderr, thr|
+    if spec.files.include?(".gemtest")
+      Open3.popen3(rake_path, "test", '--trace') do |stdin, stdout, stderr, thr|
         loop do
           if stdout.eof? and stderr.eof?
             break

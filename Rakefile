@@ -10,7 +10,7 @@ begin
     gem.email = "erik@hollensbe.org"
     gem.homepage = "http://github.com/erikh/rubygems-test"
     gem.authors = ["Erik Hollensbe", "Josiah Kiehl"]
-    gem.files = Dir["Rakefile"] + Dir["gems/**/*"] + Dir["lib/**/*.rb"] + Dir["test/**/*.rb"]
+    gem.files = Dir[".gemtest"] + Dir["Rakefile"] + Dir["gems/**/*"] + Dir["lib/**/*.rb"] + Dir["test/**/*.rb"]
     # gem is a Gem::Specification... see http://www.rubygems.org/read/chapter/20 for additional settings
     #
     gem.add_dependency 'rake'
@@ -21,15 +21,15 @@ rescue LoadError
 end
 
 require 'rake/testtask'
-Rake::TestTask.new(:gemtest) do |test|
+Rake::TestTask.new(:interactive_test) do |test|
   test.libs << 'lib' << 'test'
-  test.test_files = Dir["test/test_*.rb"]
+  test.test_files = Dir["test/test_*.rb"] + Dir["test/interactive_test_*.rb"]
   test.verbose = true
 end
 
 Rake::TestTask.new(:test) do |test|
   test.libs << 'lib' << 'test'
-  test.test_files = Dir["test/test_*.rb"] + Dir["test/interactive_test_*.rb"]
+  test.test_files = Dir["test/test_*.rb"] 
   test.verbose = true
 end
 

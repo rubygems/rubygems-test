@@ -214,7 +214,7 @@ class Gem::Commands::TestCommand < Gem::Command
       end
 
       if config["upload_results"] or
-        (!config.has_key?("upload_results") and ask_yes_no "Upload these results to rubyforge?")
+        (!config.has_key?("upload_results") and ask_yes_no "Upload these results to rubygems.org?")
 
         upload_results(gather_results(spec, output, exit_status.exitstatus == 0))
       end

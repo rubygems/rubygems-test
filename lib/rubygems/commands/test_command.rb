@@ -237,6 +237,10 @@ class Gem::Commands::TestCommand < Gem::Command
         alert_error "Tests did not pass. Examine the output and report it to the author!"
         raise Gem::TestError
       end
+    else
+      puts
+      puts "This gem has no tests! Please contact the author to gain testing and reporting!"
+      puts
     end
   end
 

@@ -37,8 +37,8 @@ Gem::Specification.new do |s|
   s.summary = %q{Gem testing facility as a plugin}
   s.test_files = [
     "test/helper.rb",
-     "test/interactive_test_on-install.rb",
-     "test/test_execute.rb"
+     "test/test_execute.rb",
+     "test/interactive_test_on-install.rb"
   ]
 
   if s.respond_to? :specification_version then

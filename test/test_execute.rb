@@ -64,27 +64,7 @@ class TestExecute < Test::Unit::TestCase
     install_stub_gem({})
 
     spec = @test.find_gem("test-gem", "0.0.0")
-    output = <<-OUT
-/home/josiah/.rvm/rubies/ruby-1.9.2-p0/bin/ruby -I"lib:lib:test" "/home/josiah/.rvm/rubies/ruby-1.9.2-p0/lib/ruby/1.9.1/rake/rake_test_loader.rb" "test/test_pass.rb" 
-Loaded suite /home/josiah/.rvm/rubies/ruby-1.9.2-p0/lib/ruby/1.9.1/rake/rake_test_loader
-Started
-.
-Finished in 0.000314 seconds.
-
-1 tests, 1 assertions, 0 failures, 0 errors, 0 skips
-
-OUT
-
-    expected_output = <<-OUT
-/home/$user/.rvm/rubies/ruby-1.9.2-p0/bin/ruby -I"lib:lib:test" "/home/$user/.rvm/rubies/ruby-1.9.2-p0/lib/ruby/1.9.1/rake/rake_test_loader.rb" "test/test_pass.rb" 
-Loaded suite /home/$user/.rvm/rubies/ruby-1.9.2-p0/lib/ruby/1.9.1/rake/rake_test_loader
-Started
-.
-Finished in 0.000314 seconds.
-
-1 tests, 1 assertions, 0 failures, 0 errors, 0 skips
-
-OUT
+    output = "foo"
 
     hash = {
       :arch         => RbConfig::CONFIG["arch"],
@@ -96,7 +76,7 @@ OUT
       :name         => spec.name,
       :version      => spec.version,
       :platform     => spec.platform,
-      :test_output  => expected_output
+      :test_output  => output
     }
 
 

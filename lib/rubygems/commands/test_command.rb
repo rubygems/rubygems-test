@@ -163,9 +163,6 @@ class Gem::Commands::TestCommand < Gem::Command
   # Gather system results, test results into a YAML format ready for delivery.
   #
   def gather_results(spec, output, result)
-    # populate $1:
-    home_matcher = /\/(home|[Uu]sers)\/[^\/]+\//
-    output.match home_matcher
     {
       :arch         => RbConfig::CONFIG["arch"],
       :vendor       => RbConfig::CONFIG["target_vendor"],
@@ -176,7 +173,7 @@ class Gem::Commands::TestCommand < Gem::Command
       :platform     => spec.platform,
       :ruby_version => RUBY_VERSION,
       :result       => result,
-      :test_output  => output.gsub(home_matcher, "/#{$1}/$user/")
+      :test_output  => output
     }.to_yaml
   end
 

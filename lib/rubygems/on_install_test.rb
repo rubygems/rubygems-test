@@ -16,7 +16,7 @@ Gem.post_install do |gem|
             gem.ui.ask_yes_no "Testing #{gem.spec.name} (#{gem.spec.version}) failed. Uninstall?"
 
           # FIXME ask drbrain how to do this more better.
-          Gem.post_install { Gem::Uninstaller.new(gem.spec.name, :version => gem.spec.version).uninstall }
+          at_exit { Gem::Uninstaller.new(gem.spec.name, :version => gem.spec.version).uninstall }
         end
       end
 

@@ -183,6 +183,8 @@ class Gem::Commands::TestCommand < Gem::Command
   # output.
   #
   def run_tests(spec, rake_path)
+    pwd = FileUtils.pwd
+
     FileUtils.chdir(spec.full_gem_path)
 
     output = ""
@@ -221,6 +223,9 @@ class Gem::Commands::TestCommand < Gem::Command
 
       if exit_status.exitstatus != 0
         alert_error "Tests did not pass. Examine the output and report it to the author!"
+
+        FileUtils.chdir(pwd)
+
         raise Gem::TestError
       end
     else
@@ -228,6 +233,8 @@ class Gem::Commands::TestCommand < Gem::Command
       puts "This gem has no tests! Please contact the author to gain testing and reporting!"
       puts
     end
+
+    FileUtils.chdir(pwd)
   end
 
   #

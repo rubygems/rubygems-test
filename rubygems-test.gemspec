@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Erik Hollensbe", "Josiah Kiehl"]
-  s.date = %q{2010-11-17}
+  s.date = %q{2010-11-20}
   s.description = %q{Test gems on your system, upload the data to a service. Uninstall failing gems.}
   s.email = %q{erik@hollensbe.org}
   s.extra_rdoc_files = [
@@ -37,8 +37,8 @@ Gem::Specification.new do |s|
   s.summary = %q{Gem testing facility as a plugin}
   s.test_files = [
     "test/helper.rb",
-     "test/test_execute.rb",
-     "test/interactive_test_on-install.rb"
+     "test/interactive_test_on-install.rb",
+     "test/test_execute.rb"
   ]
 
   if s.respond_to? :specification_version then

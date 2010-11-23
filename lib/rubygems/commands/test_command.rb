@@ -115,7 +115,7 @@ class Gem::Commands::TestCommand < Gem::Command
           say "Installing test dependency #{dep.name} (#{dep.requirement})"
           di.install(dep) 
         else
-          if ask_yes_no("Install development dependency #{dep.name} (#{dep.requirement})?")
+          if ask_yes_no("Install development dependency #{dep.name} (#{dep.requirement})?", true)
             say "Installing test dependency #{dep.name} (#{dep.requirement})"
             di.install(dep) 
           else
@@ -216,7 +216,7 @@ class Gem::Commands::TestCommand < Gem::Command
       end
 
       if config["upload_results"] or
-        (!config.has_key?("upload_results") and ask_yes_no "Upload these results to rubygems.org?")
+        (!config.has_key?("upload_results") and ask_yes_no("Upload these results to rubygems.org?", true))
 
         upload_results(gather_results(spec, output, exit_status.exitstatus == 0))
       end

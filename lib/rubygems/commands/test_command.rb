@@ -229,9 +229,7 @@ class Gem::Commands::TestCommand < Gem::Command
         raise Gem::TestError
       end
     else
-      puts
-      puts "This gem has no tests! Please contact the author to gain testing and reporting!"
-      puts
+      alert_warning "This gem has no tests! Please contact the author to gain testing and reporting!"
     end
 
     FileUtils.chdir(pwd)

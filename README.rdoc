@@ -38,7 +38,7 @@ force_uninstall_on_failure:: force uninstall when tests fail.
 
 Want your gem to be testable? 
 
-* Create (and add to your files section in your specification!) a +.gemtest+ empty file.
+* Create (and add to your files section in your specification!) a '.gemtest' empty file. This is what signals the rubygems-test engine to process your gem as testable.
 * Ensure 'rake test' works and doesn't wipe out filesystems, databases, etc. Move those tests to another task.
 * Be sure to include your Rakefile in your gem, along with your tests.
 * Be sure to note any development dependencies that will be required for executing your rakefile and your tests in your gemspec. They will be installed as a part of the testing process.  

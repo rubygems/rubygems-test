@@ -133,7 +133,7 @@ class Gem::Commands::TestCommand < Gem::Command
 
   def upload_results(yaml)
     begin
-      results_url = config["upload_service_url"] || 'http://localhost:3000/test_results' # FIXME 
+      results_url = config["upload_service_url"] || 'http://gem-testers.org/test_results' # FIXME 
       url = URI.parse(results_url)
       response = Net::HTTP.post_form url, {:results => yaml}
     rescue Errno::ECONNREFUSED => e

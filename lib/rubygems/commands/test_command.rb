@@ -170,7 +170,10 @@ class Gem::Commands::TestCommand < Gem::Command
       :os           => RbConfig::CONFIG["target_os"],
       :machine_arch => RbConfig::CONFIG["target_cpu"],
       :name         => spec.name,
-      :version      => spec.version,
+      :version      => {
+        :release      => spec.version.release.to_s,
+        :prerelease   => spec.version.prerelease?
+      },
       :platform     => spec.platform,
       :ruby_version => RUBY_VERSION,
       :result       => result,

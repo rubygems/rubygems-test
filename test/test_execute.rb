@@ -74,7 +74,10 @@ class TestExecute < Test::Unit::TestCase
       :ruby_version => RUBY_VERSION,
       :result       => true,
       :name         => spec.name,
-      :version      => spec.version,
+      :version      => {
+        :release    => spec.version.release.to_s,
+        :prerelease => spec.version.prerelease?
+      },
       :platform     => spec.platform,
       :test_output  => output
     }

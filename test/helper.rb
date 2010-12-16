@@ -69,4 +69,7 @@ class Test::Unit::TestCase::Interactive < Test::Unit::TestCase
     puts "----- This test is interactive -----"
     puts
   end
+
+  def test_01_null
+  end
 end

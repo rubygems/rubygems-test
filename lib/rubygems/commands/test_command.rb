@@ -133,7 +133,7 @@ class Gem::Commands::TestCommand < Gem::Command
 
   def upload_results(yaml)
     begin
-      results_url = config["upload_service_url"] || 'http://gem-testers.org/test_results' # FIXME 
+      results_url = config["upload_service_url"] || 'http://gem-testers.org/test_results' 
       url = URI.parse(results_url)
       response = Net::HTTP.post_form url, {:results => yaml}
     rescue Errno::ECONNREFUSED => e
@@ -192,7 +192,7 @@ class Gem::Commands::TestCommand < Gem::Command
     exit_status = nil
 
     if spec.files.include?(".gemtest")
-      Open3.popen3(rake_path, "test", '--trace') do |stdin, stdout, stderr, thr|
+      open_proc = proc do |stdin, stdout, stderr, thr|
         loop do
           if stdout.eof? and stderr.eof?
             break
@@ -213,7 +213,16 @@ class Gem::Commands::TestCommand < Gem::Command
           print buf
         end
 
-        exit_status = thr.value
+        unless RUBY_VERSION =~ /^1.8/
+          exit_status = thr.value
+        end
+      end
+
+      if RUBY_VERSION =~ /^1.8/
+        Open3.popen3(rake_path, "test", '--trace', &open_proc) 
+        exit_status = $?
+      else
+        Open3.popen3(rake_path, "test", '--trace', &open_proc) 
       end
 
       if config["upload_results"] or
@@ -246,14 +255,16 @@ class Gem::Commands::TestCommand < Gem::Command
       (get_all_gem_names rescue [options[:name]]).each do |name|
         spec = find_gem(name, version)
 
-        # we find rake and the rakefile first to eliminate needlessly installing
-        # dependencies.
-        find_rakefile(spec)
-        rake_path = find_rake
+        if spec.files.include?('.gemtest')
+          # we find rake and the rakefile first to eliminate needlessly installing
+          # dependencies.
+          find_rakefile(spec)
+          rake_path = find_rake
 
-        install_dependencies(spec)
+          install_dependencies(spec)
 
-        run_tests(spec, rake_path)
+          run_tests(spec, rake_path)
+        end
       end
     rescue Exception => e 
       if @on_install

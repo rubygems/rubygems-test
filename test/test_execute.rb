@@ -8,6 +8,10 @@ class TestExecute < Test::Unit::TestCase
     @test = Gem::Commands::TestCommand.new
   end
 
+  def test_00_fart
+    assert false
+  end
+
   def test_01_config
     set_configuration({ "auto_test_on_install" => true })
     assert @test.config

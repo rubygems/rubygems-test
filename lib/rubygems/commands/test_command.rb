@@ -7,7 +7,7 @@ require 'fileutils'
 require 'pathname'
 require 'rbconfig'
 require 'yaml'
-require 'open3'
+require 'open4'
 require 'net/http'
 require 'uri'
 require 'ostruct'
@@ -195,7 +195,7 @@ class Gem::Commands::TestCommand < Gem::Command
     exit_status = nil
 
     if spec.files.include?(".gemtest")
-      open_proc = proc do |stdin, stdout, stderr, thr|
+      open_proc = proc do |pid, stdin, stdout, stderr|
         loop do
           if stdout.eof? and stderr.eof?
             break
@@ -215,18 +215,9 @@ class Gem::Commands::TestCommand < Gem::Command
 
           print buf
         end
-
-        unless RUBY_VERSION =~ /^1.8/
-          exit_status = thr.value
-        end
       end
 
-      if RUBY_VERSION =~ /^1.8/
-        Open3.popen3(rake_path, "test", '--trace', &open_proc) 
-        exit_status = $?
-      else
-        Open3.popen3(rake_path, "test", '--trace', &open_proc) 
-      end
+      exit_status = Open4.popen4(rake_path, "test", '--trace', &open_proc) 
 
       if config["upload_results"] or
         (!config.has_key?("upload_results") and ask_yes_no("Upload these results to rubygems.org?", true))

@@ -7,7 +7,6 @@ require 'fileutils'
 require 'pathname'
 require 'rbconfig'
 require 'yaml'
-require 'open4'
 require 'net/http'
 require 'uri'
 require 'ostruct'
@@ -174,7 +173,7 @@ class Gem::Commands::TestCommand < Gem::Command
         :release      => spec.version.release.to_s,
         :prerelease   => spec.version.prerelease?
       },
-      :platform     => spec.platform,
+      :platform     => (Kernel.const_get("RUBY_ENGINE") rescue "ruby"),
       :ruby_version => RUBY_VERSION,
       :result       => result,
       :test_output  => output
@@ -205,11 +204,13 @@ class Gem::Commands::TestCommand < Gem::Command
 
           handles, _, _ = IO.select([stdout, stderr].reject { |x| x.closed? || x.eof? }, nil, nil, 0.1)
 
-          begin
-            handles.each { |io| io.readpartial(16384, buf) } if handles
-          rescue EOFError, IOError
-            next
-          end
+          handles.each do |io| 
+            begin
+              io.readpartial(16384, buf)
+            rescue EOFError, IOError
+              next
+            end
+          end if handles
 
           output += buf
 
@@ -217,7 +218,18 @@ class Gem::Commands::TestCommand < Gem::Command
         end
       end
 
-      exit_status = Open4.popen4(rake_path, "test", '--trace', &open_proc) 
+      # jruby stuffs it under IO, so we'll use that if it's available
+      # XXX I'm fairly sure that JRuby's gems don't support plugins, so this is
+      #     left untested.
+      klass = 
+        if IO.respond_to?(:open4)
+          IO 
+        else
+          require 'open4'
+          Open4
+        end
+
+      exit_status = klass.popen4(rake_path, "test", '--trace', &open_proc) 
 
       if config["upload_results"] or
         (!config.has_key?("upload_results") and ask_yes_no("Upload these results to rubygems.org?", true))
@@ -230,7 +242,7 @@ class Gem::Commands::TestCommand < Gem::Command
 
         FileUtils.chdir(pwd)
 
-        raise Gem::TestError
+        raise Gem::TestError, "something"
       end
     else
       alert_warning "This gem has no tests! Please contact the author to gain testing and reporting!"

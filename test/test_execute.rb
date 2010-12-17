@@ -78,10 +78,9 @@ class TestExecute < Test::Unit::TestCase
         :release    => spec.version.release.to_s,
         :prerelease => spec.version.prerelease?
       },
-      :platform     => spec.platform,
+      :platform     => (Kernel.const_get("RUBY_ENGINE") rescue "ruby"),
       :test_output  => output
     }
-
 
     assert_equal YAML.load(@test.gather_results(spec, output, true)), hash
   end

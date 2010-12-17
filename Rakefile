@@ -14,6 +14,7 @@ begin
     # gem is a Gem::Specification... see http://www.rubygems.org/read/chapter/20 for additional settings
     #
     gem.add_dependency 'rake'
+    gem.add_development_dependency 'jeweler'
   end
   Jeweler::GemcutterTasks.new
 rescue LoadError

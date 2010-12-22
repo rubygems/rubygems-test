@@ -3,13 +3,10 @@ require 'rubygems/source_index'
 require 'rubygems/specification'
 require 'rubygems/dependency_installer'
 require 'rubygems/user_interaction'
-require 'fileutils'
-require 'pathname'
 require 'rbconfig'
 require 'yaml'
 require 'net/http'
 require 'uri'
-require 'ostruct'
 
 class Gem::TestError < Gem::Exception; end
 class Gem::RakeNotFoundError < Gem::Exception; end
@@ -19,7 +16,7 @@ class Gem::Commands::TestCommand < Gem::Command
   include Gem::DefaultUserInteraction
 
   # taken straight out of rake
-  DEFAULT_RAKEFILES = ['rakefile', 'Rakefile', 'rakefile.rb', 'Rakefile.rb'].freeze
+  DEFAULT_RAKEFILES = ['rakefile', 'Rakefile', 'rakefile.rb', 'Rakefile.rb']
 
   def description
     'Run the tests for a specific gem'
@@ -130,9 +127,9 @@ class Gem::Commands::TestCommand < Gem::Command
   # Upload +yaml+ Results to +results_url+.
   #
 
-  def upload_results(yaml)
+  def upload_results(yaml, results_url=nil)
     begin
-      results_url = config["upload_service_url"] || 'http://gem-testers.org/test_results' 
+      results_url ||= config["upload_service_url"] || 'http://gem-testers.org/test_results' 
       url = URI.parse(results_url)
       response = Net::HTTP.post_form url, {:results => yaml}
     rescue Errno::ECONNREFUSED => e
@@ -146,7 +143,12 @@ class Gem::Commands::TestCommand < Gem::Command
         url = body[:data][0] if body[:data]
         say "Test results posted successfully! \n\t#{url}"
       when Net::HTTPRedirection
-        upload_results yaml, response.fetch('Location')
+        location = response.fetch('Location')
+        if !location or URI.parse(location) == url
+          say %[Caught redirection but was unable to redirect to #{location}.]
+        else
+          upload_results yaml, location 
+        end
       when Net::HTTPNotFound
         say %q[Unable to find where to put the test results. Try: `gem update rubygems-test`]
       when Net::HTTPClientError
@@ -186,69 +188,64 @@ class Gem::Commands::TestCommand < Gem::Command
   # output.
   #
   def run_tests(spec, rake_path)
-    pwd = FileUtils.pwd
-
-    FileUtils.chdir(spec.full_gem_path)
-
     output = ""
     exit_status = nil
 
-    if spec.files.include?(".gemtest")
-      open_proc = proc do |pid, stdin, stdout, stderr|
-        loop do
-          if stdout.eof? and stderr.eof?
-            break
+    Dir.chdir(spec.full_gem_path) do
+
+      if spec.files.include?(".gemtest")
+        open_proc = proc do |pid, stdin, stdout, stderr|
+          loop do
+            if stdout.eof? and stderr.eof?
+              break
+            end
+
+            buf = ""
+
+            handles, _, _ = IO.select([stdout, stderr].reject { |x| x.closed? || x.eof? }, nil, nil, 0.1)
+
+            handles.each do |io| 
+              begin
+                io.readpartial(16384, buf)
+              rescue EOFError, IOError
+                next
+              end
+            end if handles
+
+            output += buf
+
+            print buf
+          end
+        end
+
+        # jruby stuffs it under IO, so we'll use that if it's available
+        # XXX I'm fairly sure that JRuby's gems don't support plugins, so this is
+        #     left untested.
+        klass = 
+          if IO.respond_to?(:open4)
+            IO 
+          else
+            require 'open4'
+            Open4
           end
 
-          buf = ""
+        exit_status = klass.popen4(rake_path, "test", '--trace', &open_proc) 
 
-          handles, _, _ = IO.select([stdout, stderr].reject { |x| x.closed? || x.eof? }, nil, nil, 0.1)
+        if config["upload_results"] or
+          (!config.has_key?("upload_results") and ask_yes_no("Upload these results to rubygems.org?", true))
 
-          handles.each do |io| 
-            begin
-              io.readpartial(16384, buf)
-            rescue EOFError, IOError
-              next
-            end
-          end if handles
-
-          output += buf
-
-          print buf
-        end
-      end
-
-      # jruby stuffs it under IO, so we'll use that if it's available
-      # XXX I'm fairly sure that JRuby's gems don't support plugins, so this is
-      #     left untested.
-      klass = 
-        if IO.respond_to?(:open4)
-          IO 
-        else
-          require 'open4'
-          Open4
+          upload_results(gather_results(spec, output, exit_status.exitstatus == 0))
         end
 
-      exit_status = klass.popen4(rake_path, "test", '--trace', &open_proc) 
+        if exit_status.exitstatus != 0
+          alert_error "Tests did not pass. Examine the output and report it to the author!"
 
-      if config["upload_results"] or
-        (!config.has_key?("upload_results") and ask_yes_no("Upload these results to rubygems.org?", true))
-
-        upload_results(gather_results(spec, output, exit_status.exitstatus == 0))
+          raise Gem::TestError, "something"
+        end
+      else
+        alert_warning "This gem has no tests! Please contact the author to gain testing and reporting!"
       end
-
-      if exit_status.exitstatus != 0
-        alert_error "Tests did not pass. Examine the output and report it to the author!"
-
-        FileUtils.chdir(pwd)
-
-        raise Gem::TestError, "something"
-      end
-    else
-      alert_warning "This gem has no tests! Please contact the author to gain testing and reporting!"
     end
-
-    FileUtils.chdir(pwd)
   end
 
   #

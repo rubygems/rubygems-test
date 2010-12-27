@@ -222,7 +222,7 @@ class Gem::Commands::TestCommand < Gem::Command
         # XXX I'm fairly sure that JRuby's gems don't support plugins, so this is
         #     left untested.
         klass = 
-          if IO.respond_to?(:open4)
+          if IO.respond_to?(:popen4)
             IO 
           else
             require 'open4'

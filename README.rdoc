@@ -14,7 +14,6 @@ You can insert several things in your .gemrc to make things simpler. These all
 live in the 'test_options' subsection, e.g.:
 
   test_options:
-    use_rake_test: false
     auto_test_on_install: true 
     test_on_install: true 
     install_development_dependencies: true

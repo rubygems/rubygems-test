@@ -258,6 +258,10 @@ class Gem::Commands::TestCommand < Gem::Command
       (get_all_gem_names rescue [options[:name]]).each do |name|
         spec = find_gem(name, version)
 
+        unless spec
+          say usage
+        end
+
         if spec.files.include?('.gemtest')
           # we find rake and the rakefile first to eliminate needlessly installing
           # dependencies.
@@ -273,6 +277,7 @@ class Gem::Commands::TestCommand < Gem::Command
       if @on_install
         raise e
       else
+        say usage
         terminate_interaction 1
       end
     end

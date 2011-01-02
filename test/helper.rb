@@ -19,15 +19,12 @@ class Test::Unit::TestCase
     path = file.path
     file.close
 
-    pwd = FileUtils.pwd
-    FileUtils.chdir('gems')
-
-    spec = eval File.read(path)
-    filename = Gem::Builder.new(spec).build
-    Gem::Installer.new(filename).install
-    Gem.refresh
-
-    FileUtils.chdir(pwd)
+    FileUtils.chdir('gems') do
+      spec = eval File.read(path)
+      filename = Gem::Builder.new(spec).build
+      Gem::Installer.new(filename).install
+      Gem.refresh
+    end
   end
 
   def uninstall_stub_gem

@@ -21,16 +21,6 @@ class TestExecute < Test::Unit::TestCase
     assert_equal @test.usage, "#{@test.program_name} GEM -v VERSION"
   end
 
-  def test_03_source_index
-    install_stub_gem({ })
-
-    assert @test.source_index
-    assert_kind_of Array, @test.source_index.find_name("test-gem", Gem::Version.new("0.0.0"))
-    assert_kind_of Gem::Specification, @test.source_index.find_name("test-gem", Gem::Version.new("0.0.0")).last
-
-    uninstall_stub_gem
-  end
-
   def test_04_find_gem
     install_stub_gem({ })
 
@@ -38,7 +28,9 @@ class TestExecute < Test::Unit::TestCase
 
     uninstall_stub_gem
 
-    assert_raises(Gem::GemNotFoundException) { @test.find_gem("test-gem", "0.0.0") }
+    assert_raises(Gem::GemNotFoundException) {
+      @test.find_gem("test-gem", "0.0.0")
+    }
   end
 
   def test_05_find_rakefile

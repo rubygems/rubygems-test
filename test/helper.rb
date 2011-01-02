@@ -25,12 +25,14 @@ class Test::Unit::TestCase
     spec = eval File.read(path)
     filename = Gem::Builder.new(spec).build
     Gem::Installer.new(filename).install
+    Gem.refresh
 
     FileUtils.chdir(pwd)
   end
 
   def uninstall_stub_gem
     Gem::Uninstaller.new("test-gem").uninstall
+    Gem.refresh
   end
 
   def template_gemspec(hash)

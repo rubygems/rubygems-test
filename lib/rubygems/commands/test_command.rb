@@ -1,5 +1,4 @@
 require 'rubygems/version_option'
-require 'rubygems/source_index'
 require 'rubygems/specification'
 require 'rubygems/dependency_installer'
 require 'rubygems/user_interaction'
@@ -45,13 +44,6 @@ class Gem::Commands::TestCommand < Gem::Command
   end
 
   #
-  # Retrieve the source index
-  #
-  def source_index 
-    @gsi = Gem::SourceIndex.from_gems_in(*Gem::SourceIndex.installed_spec_directories)
-  end
-  
-  #
   # Get the config in our namespace
   #
   def config 
@@ -62,7 +54,7 @@ class Gem::Commands::TestCommand < Gem::Command
   # find a gem given a name and version
   #
   def find_gem(name, version)
-    spec = source_index.find_name(name, version).last
+    spec = Gem.source_index.find_name(name, version).last
     unless spec and (spec.installation_path rescue nil)
       alert_error "Could not find gem #{name} (#{version})"
       raise Gem::GemNotFoundException, "Could not find gem #{name}, (#{version})"
@@ -106,7 +98,7 @@ class Gem::Commands::TestCommand < Gem::Command
     di = Gem::DependencyInstaller.new
 
     spec.development_dependencies.each do |dep|
-      unless source_index.search(dep).last
+      unless Gem.source_index.search(dep).last
         if config["install_development_dependencies"]
           say "Installing test dependency #{dep.name} (#{dep.requirement})"
           di.install(dep) 

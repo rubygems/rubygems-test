@@ -224,10 +224,10 @@ class Gem::Commands::TestCommand < Gem::Command
             end
             exit_status = $?
           elsif RUBY_VERSION > '1.9'
-            require 'open4'
-            exit_status = Open4.popen4(rake_path, 'test', '--trace') do |stdin, stdout, stderr, thr|
+            require 'open3'
+            exit_status = Open3.popen3(rake_path, 'test', '--trace') do |stdin, stdout, stderr, thr|
               outer_reader_proc.call(stdout, stderr)
-              thr
+              thr.value
             end
           else
             require 'open4-vendor'

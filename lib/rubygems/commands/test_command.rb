@@ -251,7 +251,8 @@ class Gem::Commands::TestCommand < Gem::Command
         spec = find_gem(name, version)
 
         unless spec
-          say usage
+          say "unable to find gem #{name} #{version}"
+          next
         end
 
         if spec.files.include?('.gemtest')
@@ -265,13 +266,9 @@ class Gem::Commands::TestCommand < Gem::Command
           run_tests(spec, rake_path)
         end
       end
-    rescue Exception => e 
-      if @on_install
-        raise e
-      else
-        say usage
-        terminate_interaction 1
-      end
+    rescue Gem::TestError
+      raise if @on_install
+      terminate_interaction 1
     end
   end
 end

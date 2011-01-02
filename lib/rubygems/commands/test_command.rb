@@ -186,53 +186,56 @@ class Gem::Commands::TestCommand < Gem::Command
     Dir.chdir(spec.full_gem_path) do
 
       if spec.files.include?(".gemtest")
-        open_proc = proc do |pid, stdin, stdout, stderr|
-          reader_proc = proc do |orig_handles|
+        reader_proc = proc do |orig_handles|
+          current_handles = orig_handles.dup
 
-            current_handles = orig_handles.dup
+          handles, _, _ = IO.select(current_handles, nil, nil, 0.1)
+          buf = ""
 
-            handles, _, _ = IO.select(current_handles, nil, nil, 0.1)
-            buf = ""
-
-            handles.each do |io| 
-              begin
-                io.readpartial(16384, buf)
-              rescue EOFError
-                buf += io.read rescue ""
-                current_handles.reject!(io)
-              rescue IOError
-                current_handles.reject!(io)
-              end
-            end if handles
-
-            [buf, current_handles]
-          end
-
-          begin
-            loop do
-              handles = [stdout, stderr]
-              buf, handles = reader_proc.call(handles) 
-              output += buf
-              print buf
-              break unless handles
+          handles.each do |io| 
+            begin
+              io.readpartial(16384, buf)
+            rescue EOFError
+              buf += io.read rescue ""
+              current_handles.reject! { |x| x == io }
+            rescue IOError
+              current_handles.reject! { |x| x == io }
             end
-          rescue StandardError
-            break
+          end if handles
+
+          [buf, current_handles]
+        end
+
+        outer_reader_proc = proc do |stdout, stderr|
+          loop do
+            handles = [stdout, stderr]
+            buf, handles = reader_proc.call(handles) 
+            output += buf
+            print buf
+            break if handles.empty?
           end
         end
 
         # jruby stuffs it under IO, so we'll use that if it's available
-        # XXX I'm fairly sure that JRuby's gems don't support plugins, so this is
-        #     left untested.
         klass = 
           if IO.respond_to?(:popen4)
-            IO 
-          else
+            IO.popen4(rake_path, 'test', '--trace') do |pid, stdin, stdout, stderr|
+              outer_reader_proc.call(stdout, stderr)
+            end
+            exit_status = $?
+          elsif RUBY_VERSION > '1.9'
             require 'open4'
-            Open4
+            exit_status = Open4.popen4(rake_path, 'test', '--trace') do |stdin, stdout, stderr, thr|
+              outer_reader_proc.call(stdout, stderr)
+              thr
+            end
+          else
+            require 'open4-vendor'
+            exit_status = Open4.popen4(rake_path, 'test', '--trace') do |pid, stdin, stdout, stderr|
+              outer_reader_proc.call(stdout, stderr)
+            end
           end
 
-        exit_status = klass.popen4(rake_path, "test", '--trace', &open_proc) 
 
         if config["upload_results"] or
           (!config.has_key?("upload_results") and ask_yes_no("Upload these results to rubygems.org?", true))

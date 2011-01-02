@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{rubygems-test}
-  s.version = "0.1.6"
+  s.version = "0.1.7"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Erik Hollensbe", "Josiah Kiehl"]
-  s.date = %q{2010-12-28}
+  s.date = %q{2011-01-02}
   s.description = %q{Test gems on your system, upload the data to a service. Uninstall failing gems.}
   s.email = %q{erik@hollensbe.org}
   s.extra_rdoc_files = [
@@ -21,7 +21,6 @@ Gem::Specification.new do |s|
     "Rakefile",
     "gems/Rakefile",
     "gems/template.gemspec",
-    "gems/test-gem-0.0.0.gem",
     "gems/test/test_pass.rb",
     "lib/open4.rb",
     "lib/rubygems/commands/test_command.rb",

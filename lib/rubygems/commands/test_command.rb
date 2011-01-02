@@ -108,7 +108,7 @@ class Gem::Commands::TestCommand < Gem::Command
             di.install(dep) 
           else
             alert_error "Failed to install dependencies required to run tests. Aborting."
-            raise Gem::TestError
+            raise Gem::TestError, "dependencies not installed"
           end
         end
       end
@@ -232,7 +232,7 @@ class Gem::Commands::TestCommand < Gem::Command
         if exit_status.exitstatus != 0
           alert_error "Tests did not pass. Examine the output and report it to the author!"
 
-          raise Gem::TestError, "something"
+          raise Gem::TestError, "tests failed"
         end
       else
         alert_warning "This gem has no tests! Please contact the author to gain testing and reporting!"

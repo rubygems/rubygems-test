@@ -189,6 +189,9 @@ class Gem::Commands::TestCommand < Gem::Command
         open_proc = proc do |pid, stdin, stdout, stderr|
           loop do
             if stdout.eof? and stderr.eof?
+              output += stdout.read rescue ""
+              output += stderr.read rescue ""
+              print output
               break
             end
 

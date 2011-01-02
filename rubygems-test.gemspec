@@ -5,7 +5,7 @@
 
 Gem::Specification.new do |s|
   s.name = %q{rubygems-test}
-  s.version = "0.1.7"
+  s.version = "0.1.8"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Erik Hollensbe", "Josiah Kiehl"]
@@ -22,7 +22,7 @@ Gem::Specification.new do |s|
     "gems/Rakefile",
     "gems/template.gemspec",
     "gems/test/test_pass.rb",
-    "lib/open4.rb",
+    "lib/open4-vendor.rb",
     "lib/rubygems/commands/test_command.rb",
     "lib/rubygems/on_install_test.rb",
     "lib/rubygems_plugin.rb",

@@ -187,29 +187,37 @@ class Gem::Commands::TestCommand < Gem::Command
 
       if spec.files.include?(".gemtest")
         open_proc = proc do |pid, stdin, stdout, stderr|
-          loop do
-            if stdout.eof? and stderr.eof?
-              output += stdout.read rescue ""
-              output += stderr.read rescue ""
-              print output
-              break
-            end
+          reader_proc = proc do |orig_handles|
 
+            current_handles = orig_handles.dup
+
+            handles, _, _ = IO.select(current_handles, nil, nil, 0.1)
             buf = ""
-
-            handles, _, _ = IO.select([stdout, stderr].reject { |x| x.closed? || x.eof? }, nil, nil, 0.1)
 
             handles.each do |io| 
               begin
                 io.readpartial(16384, buf)
-              rescue EOFError, IOError
-                next
+              rescue EOFError
+                buf += io.read rescue ""
+                current_handles.reject!(io)
+              rescue IOError
+                current_handles.reject!(io)
               end
             end if handles
 
-            output += buf
+            [buf, current_handles]
+          end
 
-            print buf
+          begin
+            loop do
+              handles = [stdout, stderr]
+              buf, handles = reader_proc.call(handles) 
+              output += buf
+              print buf
+              break unless handles
+            end
+          rescue StandardError
+            break
           end
         end
 

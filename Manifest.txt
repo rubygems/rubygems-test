@@ -1,6 +1,7 @@
 .gemtest
 LICENSE
 README.txt
+History.txt
 Manifest.txt
 Rakefile
 gems/Rakefile

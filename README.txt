@@ -1,4 +1,4 @@
-= rubygems-test - commands and facilities for automated rubygems testing.
+= rubygems-test - commands and facilities for automated rubygems testing and reporting.
 
 == For users
 

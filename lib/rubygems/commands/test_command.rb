@@ -14,6 +14,8 @@ class Gem::Commands::TestCommand < Gem::Command
   include Gem::VersionOption
   include Gem::DefaultUserInteraction
 
+  VERSION = "0.1.9"
+
   # taken straight out of rake
   DEFAULT_RAKEFILES = ['rakefile', 'Rakefile', 'rakefile.rb', 'Rakefile.rb']
 

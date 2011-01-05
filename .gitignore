@@ -21,3 +21,5 @@ pkg
 ## PROJECT::SPECIFIC
 gems/*.gem
 *.rbc
+
+coverage.info

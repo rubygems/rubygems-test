@@ -1,0 +1,13 @@
+.gemtest
+LICENSE
+README.txt
+gems/Rakefile
+gems/template.gemspec
+gems/test/test_pass.rb
+lib/open4-vendor.rb
+lib/rubygems/commands/test_command.rb
+lib/rubygems/on_install_test.rb
+lib/rubygems_plugin.rb
+test/helper.rb
+test/interactive_test_on-install.rb
+test/test_execute.rb

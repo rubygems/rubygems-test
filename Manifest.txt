@@ -1,6 +1,8 @@
 .gemtest
 LICENSE
 README.txt
+Manifest.txt
+Rakefile
 gems/Rakefile
 gems/template.gemspec
 gems/test/test_pass.rb

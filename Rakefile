@@ -12,17 +12,19 @@ Hoe.spec 'rubygems-test' do
 
   # doin' it wrong because we're a gem plugin
   # that means I can be "special"!
- 
+  self.version = '0.2.0'
+  
   self.rubyforge_name = nil
-  self.version = '0.1.9'
+
   self.description = <<-EOF
   This installs three major features:
 
   * a 'gem test' command.
   * the ability to test your gems on installation, and uninstall them if they fail testing.
-  * A facility to upload your test results to rubygems.org (coming soon, see http://github.com/bluepojo/gem-testers)
+  * A facility to upload your test results to http://www.gem-testers.org.
   EOF
-  self.summary = 'commands and facilities for automated rubygems testing and reporting'
+
+  self.summary = 'commands and facilities for automated and user-contributed rubygems testing and reporting'
   self.url = %w[http://github.com/rubygems/rubygems-test]
   
   require_ruby_version ">= 1.8.7"

@@ -1,9 +1,9 @@
-require 'rubygems/version_option'
-require 'rubygems/specification'
-require 'rubygems/dependency_installer'
-require 'rubygems/user_interaction'
+Gem.autoload(:VersionOption, 'rubygems/version_option')
+Gem.autoload(:Specification, 'rubygems/specification')
+Gem.autoload(:DependencyInstaller, 'rubygems/dependency_installer')
+Gem.autoload(:DefaultUserInteraction, 'rubygems/user_interaction')
 require 'rbconfig'
-require 'yaml'
+autoload(:YAML, 'yaml')
 require 'net/http'
 require 'uri'
 
@@ -13,8 +13,6 @@ class Gem::RakeNotFoundError < Gem::Exception; end
 class Gem::Commands::TestCommand < Gem::Command
   include Gem::VersionOption
   include Gem::DefaultUserInteraction
-
-  VERSION = "0.1.9"
 
   # taken straight out of rake
   DEFAULT_RAKEFILES = ['rakefile', 'Rakefile', 'rakefile.rb', 'Rakefile.rb']

@@ -1,7 +1,7 @@
-require 'rubygems'
-require 'rubygems/builder'
-require 'rubygems/installer'
-require 'rubygems/uninstaller'
+require 'rubygems' unless defined? Gem
+require 'rubygems/builder' unless defined? Gem::Builder
+require 'rubygems/installer' unless defined? Gem::Installer
+require 'rubygems/uninstaller' unless defined? Gem::Uninstaller
 require 'test/unit'
 require 'erb'
 require 'tempfile'
@@ -10,7 +10,7 @@ require 'fileutils'
 $LOAD_PATH.unshift(File.dirname(__FILE__))
 $LOAD_PATH.unshift(File.join(File.dirname(__FILE__), '..', 'lib'))
 
-require 'rubygems/commands/test_command'
+require 'rubygems/commands/test_command' unless defined? Gem::Command::TestCommand
 
 class Test::Unit::TestCase
   def install_stub_gem(hash)

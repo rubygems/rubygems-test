@@ -292,7 +292,7 @@ class Gem::Commands::TestCommand < Gem::Command
           say " * Ensure 'rake test' works and doesn't do system damage"
           say " * Add your tests and Rakefile to your gem."
           say "" 
-          say "For more information, please visit this url:"
+          say "For more information, please see the rubygems-test README:"
           say "https://github.com/rubygems/rubygems-test/blob/master/README.txt"
         end
       end

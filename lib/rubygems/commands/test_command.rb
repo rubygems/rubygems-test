@@ -280,6 +280,20 @@ class Gem::Commands::TestCommand < Gem::Command
           install_dependencies(spec)
 
           run_tests(spec, rake_path)
+        else
+          say "Gem '#{name}' (version #{version}) needs to opt-in for testing."
+          say ""
+          say "Locally available testing helps gems maintain high quality by"
+          say "ensuring they work correctly on a wider array of platforms than the"
+          say "original developer can access."
+          say ""
+          say "If you are the author: "
+          say " * Add the file '.gemtest' to your spec.files"
+          say " * Ensure 'rake test' works and doesn't do system damage"
+          say " * Add your tests and Rakefile to your gem."
+          say "" 
+          say "For more information, please visit this url:"
+          say "https://github.com/rubygems/rubygems-test/blob/master/README.txt"
         end
       end
     rescue Gem::TestError

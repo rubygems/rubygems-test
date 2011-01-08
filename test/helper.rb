@@ -36,6 +36,7 @@ class Test::Unit::TestCase
     erb = ERB.new(File.read(File.join('gems', 'template.gemspec')))
 
     @development_dependencies = ""
+
     (hash[:development_dependencies] || []).each do |dep|
       @development_dependencies += "s.add_development_dependency '#{dep}'\n"
     end
@@ -56,19 +57,5 @@ class Test::Unit::TestCase
 
   def setup
     set_configuration({ })
-  end
-end
-
-class Test::Unit::TestCase::Interactive < Test::Unit::TestCase
-  def setup
-    super
-
-    require 'rubygems/on_install_test'
-    puts
-    puts "----- This test is interactive -----"
-    puts
-  end
-
-  def test_01_null
   end
 end

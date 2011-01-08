@@ -192,23 +192,30 @@ class Gem::Commands::TestCommand < Gem::Command
           handles, _, _ = IO.select(current_handles, nil, nil, 0.1)
           buf = ""
 
-          handles.each do |io| 
-            begin
-              io.readpartial(16384, buf)
-            rescue EOFError
-              buf += io.read rescue ""
-              current_handles.reject! { |x| x == io }
-            rescue IOError
-              current_handles.reject! { |x| x == io }
-            end
-          end if handles
+          if handles
+            handles.compact.each do |io| 
+              begin
+                res = io.readline
+
+                unless res
+                  current_handles.reject! { |x| x == io }
+                  next
+                end
+
+                buf += res
+              rescue EOFError
+                buf += io.read rescue ""
+                current_handles.reject! { |x| x == io }
+              end
+            end 
+          end
 
           [buf, current_handles]
         end
 
         outer_reader_proc = proc do |stdout, stderr|
           loop do
-            handles = [stdout, stderr]
+            handles = [stderr, stdout]
             buf, handles = reader_proc.call(handles) 
             output += buf
             print buf
@@ -216,22 +223,24 @@ class Gem::Commands::TestCommand < Gem::Command
           end
         end
 
+        rake_args = [rake_path, 'test', '--trace']
+
         # jruby stuffs it under IO, so we'll use that if it's available
         klass = 
           if IO.respond_to?(:popen4)
-            IO.popen4(rake_path, 'test', '--trace') do |pid, stdin, stdout, stderr|
+            IO.popen4(*rake_args) do |pid, stdin, stdout, stderr|
               outer_reader_proc.call(stdout, stderr)
             end
             exit_status = $?
           elsif RUBY_VERSION > '1.9'
             require 'open3'
-            exit_status = Open3.popen3(rake_path, 'test', '--trace') do |stdin, stdout, stderr, thr|
+            exit_status = Open3.popen3(*rake_args) do |stdin, stdout, stderr, thr|
               outer_reader_proc.call(stdout, stderr)
               thr.value
             end
           else
             require 'open4-vendor'
-            exit_status = Open4.popen4(rake_path, 'test', '--trace') do |pid, stdin, stdout, stderr|
+            exit_status = Open4.popen4(*rake_args) do |pid, stdin, stdout, stderr|
               outer_reader_proc.call(stdout, stderr)
             end
           end

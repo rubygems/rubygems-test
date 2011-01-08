@@ -195,14 +195,7 @@ class Gem::Commands::TestCommand < Gem::Command
           if handles
             handles.compact.each do |io| 
               begin
-                res = io.readline
-
-                unless res
-                  current_handles.reject! { |x| x == io }
-                  next
-                end
-
-                buf += res
+                buf += io.readline
               rescue EOFError
                 buf += io.read rescue ""
                 current_handles.reject! { |x| x == io }

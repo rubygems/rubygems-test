@@ -58,4 +58,8 @@ class Test::Unit::TestCase
   def setup
     set_configuration({ })
   end
+
+  def teardown
+    uninstall_stub_gem rescue nil
+  end
 end

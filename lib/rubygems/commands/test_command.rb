@@ -132,8 +132,14 @@ class Gem::Commands::TestCommand < Gem::Command
       case response
       when Net::HTTPSuccess
         body = YAML::load(response.body)
-        url = body[:data][0] if body[:data]
-        say "Test results posted successfully! \n\t#{url}"
+        if body[:success]
+          url = body[:data][0] if body[:data]
+          say "Test results posted successfully! \n\t#{url}"
+        else
+          body[:errors].each do |error|
+            say error
+          end if body[:errors]
+        end
       when Net::HTTPRedirection
         location = response.fetch('Location')
         if !location or URI.parse(location) == url

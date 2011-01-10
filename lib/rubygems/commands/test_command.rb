@@ -231,13 +231,23 @@ class Gem::Commands::TestCommand < Gem::Command
               outer_reader_proc.call(stdout, stderr)
               thr.value
             end
+          elsif RUBY_PLATFORM =~ /mingw/
+            begin
+              require 'win32/open3'
+              Open3.popen3([File.join(RbConfig::CONFIG["bindir"], 'ruby'), *rake_args].join(' ')) do |stdin, stdout, stderr|
+                outer_reader_proc.call(stdout, stderr)
+              end
+              exit_status = $?
+            rescue LoadError
+              say "1.8/Windows users must install the 'win32-open3' gem to run tests"
+              terminate_interaction 1
+            end
           else
             require 'open4-vendor'
             exit_status = Open4.popen4(*rake_args) do |pid, stdin, stdout, stderr|
               outer_reader_proc.call(stdout, stderr)
             end
           end
-
 
         if config["upload_results"] or
           (!config.has_key?("upload_results") and ask_yes_no("Upload these results?", true))

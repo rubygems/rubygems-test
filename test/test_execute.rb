@@ -76,4 +76,8 @@ class TestExecute < Test::Unit::TestCase
 
     assert_equal YAML.load(@test.gather_results(spec, output, true)), hash
   end
+
+  def test_08_print_errors_from_server
+    
+  end
 end

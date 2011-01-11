@@ -273,12 +273,7 @@ class Gem::Commands::TestCommand < Gem::Command
           end
         end
 
-      # FIXME god this predicate is painful
-      if !options[:force] and (
-        config["upload_results"] or
-        (!config.has_key?("upload_results") and ask_yes_no("Upload these results?", true))
-      )
-
+      if upload_results?
         upload_results(gather_results(spec, output, exit_status.exitstatus == 0))
       end
 
@@ -289,6 +284,20 @@ class Gem::Commands::TestCommand < Gem::Command
       end
     end
   end
+
+  #
+  # Convenience predicate for upload_results option
+  #
+  def upload_results?
+    !options[:force] and (
+      config["upload_results"] or
+      (
+        !config.has_key?("upload_results") and 
+          ask_yes_no("Upload these results?", true)
+      )
+    )
+  end
+  
 
   #
   # Execute routine. This is where the magic happens.

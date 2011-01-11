@@ -12,7 +12,7 @@ Hoe.spec 'rubygems-test' do
 
   # doin' it wrong because we're a gem plugin
   # that means I can be "special"!
-  self.version = '0.2.2'
+  self.version = '0.2.3'
   
   self.rubyforge_name = nil
 

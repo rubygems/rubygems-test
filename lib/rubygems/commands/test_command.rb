@@ -1,7 +1,7 @@
 Gem.autoload(:VersionOption, 'rubygems/version_option')
 Gem.autoload(:Specification, 'rubygems/specification')
-Gem.autoload(:DependencyInstaller, 'rubygems/dependency_installer')
 Gem.autoload(:DefaultUserInteraction, 'rubygems/user_interaction')
+Gem.autoload(:DependencyInstaller, 'rubygems/dependency_installer')
 require 'rbconfig'
 autoload(:YAML, 'yaml')
 require 'net/http'

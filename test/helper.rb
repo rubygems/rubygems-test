@@ -1,5 +1,6 @@
 require 'rubygems' unless defined? Gem
 require 'rubygems/builder' unless defined? Gem::Builder
+require 'rubygems/user_interaction' unless defined? Gem::UserInteraction
 require 'rubygems/installer' unless defined? Gem::Installer
 require 'rubygems/uninstaller' unless defined? Gem::Uninstaller
 require 'test/unit'

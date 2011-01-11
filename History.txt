@@ -1,1 +1,11 @@
+=== 0.2.2 / 1/10/2011
+
+* Windows + 1.8 support. Requires the 'win32-open3' gem.
+
+* --force option - run tests even if the gem author hasn't opted in. Do not
+  upload these results ever. 
+
+* --dep-user-install option - install any development dependencies to
+  Gem.user_dir
+
 === 0.1.9 / Sometime before hoe

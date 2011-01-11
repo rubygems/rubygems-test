@@ -18,7 +18,7 @@ class TestExecute < Test::Unit::TestCase
   def test_02_gem_command_attributes
     assert_equal @test.description, "Run the tests for a specific gem"
     assert_equal @test.arguments, "GEM: name of gem"
-    assert_equal @test.usage, "#{@test.program_name} GEM -v VERSION"
+    assert_equal @test.usage, "#{@test.program_name} GEM [-v VERSION] [--force] [--dep-user-install]"
   end
 
   def test_04_find_gem

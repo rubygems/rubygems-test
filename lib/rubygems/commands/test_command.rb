@@ -26,7 +26,7 @@ class Gem::Commands::TestCommand < Gem::Command
   end
   
   def usage
-    "#{program_name} GEM -v VERSION"
+    "#{program_name} GEM [-v VERSION] [--force] [--dep-user-install]"
   end
   
   def initialize(spec=nil, on_install=false)
@@ -41,6 +41,20 @@ class Gem::Commands::TestCommand < Gem::Command
 
     super 'test', description, options
     add_version_option
+
+    add_option(
+      '--force', 
+      'ignore opt-in testing and just run the tests'
+    ) do |v,o| 
+      o[:force] = true 
+    end
+
+    add_option(
+      '--dep-user-install', 
+      'force installing the dependencies into the user path'
+    ) do |v,o| 
+      o[:dep_user_install] = true 
+    end
   end
 
   #
@@ -95,7 +109,13 @@ class Gem::Commands::TestCommand < Gem::Command
   # Install development dependencies for the gem we're about to test.
   #
   def install_dependencies(spec)
-    di = Gem::DependencyInstaller.new
+    di = nil
+
+    if options[:dep_user_install]
+      di = Gem::DependencyInstaller.new(:install_dir => Gem.user_dir)
+    else
+      di = Gem::DependencyInstaller.new
+    end
 
     spec.development_dependencies.each do |dep|
       unless Gem.source_index.search(dep).last
@@ -190,84 +210,82 @@ class Gem::Commands::TestCommand < Gem::Command
     exit_status = nil
 
     Dir.chdir(spec.full_gem_path) do
+      reader_proc = proc do |orig_handles|
+        current_handles = orig_handles.dup
 
-      if spec.files.include?(".gemtest")
-        reader_proc = proc do |orig_handles|
-          current_handles = orig_handles.dup
+        handles, _, _ = IO.select(current_handles, nil, nil, 0.1)
+        buf = ""
 
-          handles, _, _ = IO.select(current_handles, nil, nil, 0.1)
-          buf = ""
-
-          if handles
-            handles.compact.each do |io| 
-              begin
-                buf += io.readline
-              rescue EOFError
-                buf += io.read rescue ""
-                current_handles.reject! { |x| x == io }
-              end
-            end 
-          end
-
-          [buf, current_handles]
+        if handles
+          handles.compact.each do |io| 
+            begin
+              buf += io.readline
+            rescue EOFError
+              buf += io.read rescue ""
+              current_handles.reject! { |x| x == io }
+            end
+          end 
         end
 
-        outer_reader_proc = proc do |stdout, stderr|
-          loop do
-            handles = [stderr, stdout]
-            buf, handles = reader_proc.call(handles) 
-            output += buf
-            print buf
-            break if handles.empty?
-          end
+        [buf, current_handles]
+      end
+
+      outer_reader_proc = proc do |stdout, stderr|
+        loop do
+          handles = [stderr, stdout]
+          buf, handles = reader_proc.call(handles) 
+          output += buf
+          print buf
+          break if handles.empty?
         end
+      end
 
-        rake_args = [rake_path, 'test', '--trace']
+      rake_args = [rake_path, 'test', '--trace']
 
-        # jruby stuffs it under IO, so we'll use that if it's available
-        klass = 
-          if IO.respond_to?(:popen4)
-            IO.popen4(*rake_args) do |pid, stdin, stdout, stderr|
+      # jruby stuffs it under IO, so we'll use that if it's available
+      klass = 
+        if IO.respond_to?(:popen4)
+          IO.popen4(*rake_args) do |pid, stdin, stdout, stderr|
+            outer_reader_proc.call(stdout, stderr)
+          end
+          exit_status = $?
+        elsif RUBY_VERSION > '1.9'
+          require 'open3'
+          exit_status = Open3.popen3(*rake_args) do |stdin, stdout, stderr, thr|
+            outer_reader_proc.call(stdout, stderr)
+            thr.value
+          end
+        elsif RUBY_PLATFORM =~ /mingw/
+          begin
+            require 'win32/open3'
+            Open3.popen3([File.join(RbConfig::CONFIG["bindir"], 'ruby'), *rake_args].join(' ')) do |stdin, stdout, stderr|
               outer_reader_proc.call(stdout, stderr)
             end
             exit_status = $?
-          elsif RUBY_VERSION > '1.9'
-            require 'open3'
-            exit_status = Open3.popen3(*rake_args) do |stdin, stdout, stderr, thr|
-              outer_reader_proc.call(stdout, stderr)
-              thr.value
-            end
-          elsif RUBY_PLATFORM =~ /mingw/
-            begin
-              require 'win32/open3'
-              Open3.popen3([File.join(RbConfig::CONFIG["bindir"], 'ruby'), *rake_args].join(' ')) do |stdin, stdout, stderr|
-                outer_reader_proc.call(stdout, stderr)
-              end
-              exit_status = $?
-            rescue LoadError
-              say "1.8/Windows users must install the 'win32-open3' gem to run tests"
-              terminate_interaction 1
-            end
-          else
-            require 'open4-vendor'
-            exit_status = Open4.popen4(*rake_args) do |pid, stdin, stdout, stderr|
-              outer_reader_proc.call(stdout, stderr)
-            end
+          rescue LoadError
+            say "1.8/Windows users must install the 'win32-open3' gem to run tests"
+            terminate_interaction 1
           end
-
-        if config["upload_results"] or
-          (!config.has_key?("upload_results") and ask_yes_no("Upload these results?", true))
-
-          upload_results(gather_results(spec, output, exit_status.exitstatus == 0))
+        else
+          require 'open4-vendor'
+          exit_status = Open4.popen4(*rake_args) do |pid, stdin, stdout, stderr|
+            outer_reader_proc.call(stdout, stderr)
+          end
         end
 
-        if exit_status.exitstatus != 0
-          alert_error "Tests did not pass. Examine the output and report it to the author!"
+      # FIXME god this predicate is painful
+      if !options[:force] and (
+        config["upload_results"] or
+        (!config.has_key?("upload_results") and ask_yes_no("Upload these results?", true))
+      )
 
-          raise Gem::TestError, "tests failed"
-        end
-      else
-        alert_warning "This gem has no tests! Please contact the author to gain testing and reporting!"
+        upload_results(gather_results(spec, output, exit_status.exitstatus == 0))
+      end
+
+      if exit_status.exitstatus != 0
+        alert_error "Tests did not pass. Examine the output and report it to the author!"
+
+        raise Gem::TestError, "tests failed"
       end
     end
   end
@@ -287,7 +305,7 @@ class Gem::Commands::TestCommand < Gem::Command
           next
         end
 
-        if spec.files.include?('.gemtest')
+        if spec.files.include?('.gemtest') or options[:force]
           # we find rake and the rakefile first to eliminate needlessly installing
           # dependencies.
           find_rakefile(spec)

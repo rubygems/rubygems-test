@@ -209,6 +209,8 @@ class Gem::Commands::TestCommand < Gem::Command
     output = ""
     exit_status = nil
 
+    [STDOUT, STDERR, $stdout, $stderr].map { |x| x.sync = true }
+
     Dir.chdir(spec.full_gem_path) do
       reader_proc = proc do |orig_handles|
         current_handles = orig_handles.dup
@@ -219,7 +221,7 @@ class Gem::Commands::TestCommand < Gem::Command
         if handles
           handles.compact.each do |io| 
             begin
-              buf += io.readline
+              buf += io.read_nonblock(8)
             rescue EOFError
               buf += io.read rescue ""
               current_handles.reject! { |x| x == io }
@@ -243,6 +245,10 @@ class Gem::Commands::TestCommand < Gem::Command
       rake_args = [rake_path, 'test', '--trace']
 
       # jruby stuffs it under IO, so we'll use that if it's available
+      # if we're on 1.9, use open3 regardless of platform.
+      # If we're not:
+      #   * on windows use win32/open3 from win32-open3 gem
+      #   * on unix use open4-vendor
       klass = 
         if IO.respond_to?(:popen4)
           IO.popen4(*rake_args) do |pid, stdin, stdout, stderr|

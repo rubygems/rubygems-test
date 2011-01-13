@@ -216,28 +216,45 @@ class Gem::Commands::TestCommand < Gem::Command
         current_handles = orig_handles.dup
 
         handles, _, _ = IO.select(current_handles, nil, nil, 0.1)
-        buf = ""
+        bufs = Hash.new { |h, k| h[k] = "" }
 
         if handles
           handles.compact.each do |io| 
             begin
-              buf += io.read_nonblock(8)
+              bufs[io] += io.read_nonblock(8)
             rescue EOFError
-              buf += io.read rescue ""
+              bufs[io] += io.read rescue ""
               current_handles.reject! { |x| x == io }
             end
           end 
         end
 
-        [buf, current_handles]
+        [bufs, current_handles]
       end
 
       outer_reader_proc = proc do |stdout, stderr|
+        stderr_buf = ""
+
         loop do
+          output = ""
           handles = [stderr, stdout]
-          buf, handles = reader_proc.call(handles) 
-          output += buf
-          print buf
+          bufs, handles = reader_proc.call(handles)
+
+          # hello mom, I've rewritten unix i/o and it probably sucks.
+          # basically, we only "flush" stderr on newline and stdout 
+          # "flushes" immediately. and by "flush" I mean "concatenates".
+          if bufs.has_key?(stderr)
+            stderr_buf += bufs[stderr] 
+            buf_ary = stderr_buf.split(/\n/)
+            if buf_ary.length > 1
+              output += buf_ary[0..-2].join("\n") + "\n"
+              stderr_buf = buf_ary[-1] 
+            end
+          end
+
+          output += bufs[stdout] if bufs.has_key?(stdout)
+
+          print output
           break if handles.empty?
         end
       end

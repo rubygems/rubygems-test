@@ -307,6 +307,13 @@ class Gem::Commands::TestCommand < Gem::Command
       version = options[:version] || Gem::Requirement.default
 
       (get_all_gem_names rescue [options[:name]]).each do |name|
+
+        unless name
+          alert_error "No gem specified."
+          show_help
+          terminate_interaction 1
+        end
+
         spec = find_gem(name, version)
 
         unless spec

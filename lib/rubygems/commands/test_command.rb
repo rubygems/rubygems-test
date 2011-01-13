@@ -221,7 +221,7 @@ class Gem::Commands::TestCommand < Gem::Command
         if handles
           handles.compact.each do |io| 
             begin
-              bufs[io] += io.read_nonblock(8)
+              bufs[io] += io.readpartial(8)
             rescue EOFError
               bufs[io] += io.read rescue ""
               current_handles.reject! { |x| x == io }

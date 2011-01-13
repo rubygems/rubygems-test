@@ -1,3 +1,10 @@
+=== 0.2.4 / 1/13/2011
+
+* Better I/O loop and terminal handling; test/unit dots should appear as they
+  arrive again.
+
+* Better help for those who provide no gem names.
+
 === 0.2.2 / 1/10/2011
 
 * Windows + 1.8 support. Requires the 'win32-open3' gem.

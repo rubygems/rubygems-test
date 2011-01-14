@@ -236,7 +236,7 @@ class Gem::Commands::TestCommand < Gem::Command
         stderr_buf = ""
 
         loop do
-          output = ""
+          tmp_output = ""
           handles = [stderr, stdout]
           bufs, handles = reader_proc.call(handles)
 
@@ -247,14 +247,15 @@ class Gem::Commands::TestCommand < Gem::Command
             stderr_buf += bufs[stderr] 
             buf_ary = stderr_buf.split(/\n/)
             if buf_ary.length > 1
-              output += buf_ary[0..-2].join("\n") + "\n"
+              tmp_output += buf_ary[0..-2].join("\n") + "\n"
               stderr_buf = buf_ary[-1] 
             end
           end
 
-          output += bufs[stdout] if bufs.has_key?(stdout)
+          tmp_output += bufs[stdout] if bufs.has_key?(stdout)
 
-          print output
+          print tmp_output
+          output += tmp_output
           break if handles.empty?
         end
       end

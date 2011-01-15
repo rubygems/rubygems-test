@@ -245,9 +245,9 @@ class Gem::Commands::TestCommand < Gem::Command
           # "flushes" immediately. and by "flush" I mean "concatenates".
           if bufs.has_key?(stderr)
             stderr_buf += bufs[stderr] 
-            buf_ary = stderr_buf.split(/\n/)
+            buf_ary = stderr_buf.split($/)
             if buf_ary.length > 1
-              tmp_output += buf_ary[0..-2].join("\n") + "\n"
+              tmp_output += buf_ary[0..-2].join($/) + $/
               stderr_buf = buf_ary[-1] 
             end
           end

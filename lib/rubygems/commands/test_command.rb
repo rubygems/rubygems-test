@@ -95,11 +95,20 @@ class Gem::Commands::TestCommand < Gem::Command
   # Locate rake itself, prefer gems version.
   #
   def find_rake
-    rake_path = Gem.bin_path('rake') rescue File.join(RbConfig::CONFIG["bindir"], 'rake')
+
+    rake_finder = proc do |rake_name|
+      Gem.bin_path('rake') rescue File.join(RbConfig::CONFIG["bindir"], rake_name || 'rake')
+    end
+   
+    rake_path = rake_finder.call(nil)
 
     unless File.exist?(rake_path)
-      alert_error "Couldn't find rake; rubygems-test will not work without it. Aborting."
-      raise Gem::RakeNotFoundError, "Couldn't find rake; rubygems-test will not work without it."
+      rake_path = rake_finder.call('rake.bat')
+
+      unless File.exist?(rake_path)
+        alert_error "Couldn't find rake; rubygems-test will not work without it. Aborting."
+        raise Gem::RakeNotFoundError, "Couldn't find rake; rubygems-test will not work without it."
+      end
     end
 
     return rake_path
@@ -262,6 +271,23 @@ class Gem::Commands::TestCommand < Gem::Command
 
       rake_args = [rake_path, 'test', '--trace']
 
+      rake_args_concatenator = proc do |ra|
+        ra.unshift(File.join(RbConfig::CONFIG["bindir"], 'ruby'))
+      end
+
+      case RUBY_PLATFORM
+      when /mingw/
+        rake_args_concatenator.call(rake_args)
+        rake_args = rake_args.join(' ')
+      when /mswin/
+        # if we don't run rake.bat (system rake for 1.9 as opposed to gems),
+        # run it with ruby.
+        if rake_args[0] =~ /rake$/
+          rake_args_concatenator.call(rake_args)
+        end
+        rake_args = rake_args.join(' ')
+      end
+
       # jruby stuffs it under IO, so we'll use that if it's available
       # if we're on 1.9, use open3 regardless of platform.
       # If we're not:
@@ -279,10 +305,10 @@ class Gem::Commands::TestCommand < Gem::Command
             outer_reader_proc.call(stdout, stderr)
             thr.value
           end
-        elsif RUBY_PLATFORM =~ /mingw/
+        elsif RUBY_PLATFORM =~ /mingw|mswin/
           begin
             require 'win32/open3'
-            Open3.popen3([File.join(RbConfig::CONFIG["bindir"], 'ruby'), *rake_args].join(' ')) do |stdin, stdout, stderr|
+            Open3.popen3(*rake_args) do |stdin, stdout, stderr|
               outer_reader_proc.call(stdout, stderr)
             end
             exit_status = $?

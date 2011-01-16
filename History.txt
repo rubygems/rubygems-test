@@ -1,3 +1,7 @@
+=== 0.2.6 / 2011-01-15
+
+* Big refactor of rake locating to get running on mswin32
+
 === 0.2.5 / 1/15/2011
 
 * use the input record separator instead of straight newlines - windows!

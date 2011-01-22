@@ -242,7 +242,10 @@ class Gem::Commands::TestCommand < Gem::Command
 
             if handles.include?(stdout)
               begin
-                if RUBY_PLATFORM =~ /mswin|mingw/
+                # 
+                # readpartial seems to break on win32-open3's gem
+                #
+                if RUBY_PLATFORM =~ /mswin|mingw/ and RUBY_VERSION =~ /^1.8/
                   tmp_output = "" 
                   while IO.select([stdout], nil, nil, 0.1)
                     tmp = stdout.read(1)

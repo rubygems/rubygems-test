@@ -223,16 +223,14 @@ class Gem::Commands::TestCommand < Gem::Command
     Dir.chdir(spec.full_gem_path) do
 
       outer_reader_proc = proc do |stdout, stderr|
-        current_handles = [stdout, stderr]
-
-        while current_handles and !current_handles.compact.empty?
-          handles, _, _ = IO.select([stdout, stderr].reject(&:eof?), nil, nil, 0.001)
+        while ![stdout, stderr].reject(&:eof?).empty?
+          handles, _, _ = IO.select([stdout, stderr].reject(&:eof?), nil, nil, 0.1)
 
           if handles
             if handles.include?(stderr)
               begin
                 tmp_output = stderr.readline
-                print tmp_output
+                puts tmp_output
                 output += tmp_output
               rescue EOFError
                 handles.reject! { |x| x == stderr }
@@ -246,14 +244,12 @@ class Gem::Commands::TestCommand < Gem::Command
                 output += tmp_output
               rescue EOFError 
                 tmp_output = stdout.read || ""
-                print tmp_output
+                puts tmp_output
                 output += tmp_output
                 handles.reject! { |x| x == stdout }
               end
             end
           end
-
-          current_handles = handles
         end
       end
 

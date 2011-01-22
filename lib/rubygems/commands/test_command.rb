@@ -223,6 +223,10 @@ class Gem::Commands::TestCommand < Gem::Command
     Dir.chdir(spec.full_gem_path) do
 
       outer_reader_proc = proc do |stdout, stderr|
+
+        stdout.sync = true
+        stderr.sync = true
+
         while ![stdout, stderr].reject(&:eof?).empty?
           handles, _, _ = IO.select([stdout, stderr].reject(&:eof?), nil, nil, 0.1)
 
@@ -233,20 +237,27 @@ class Gem::Commands::TestCommand < Gem::Command
                 puts tmp_output
                 output += tmp_output
               rescue EOFError
-                handles.reject! { |x| x == stderr }
               end
             end
 
             if handles.include?(stdout)
               begin
-                tmp_output = stdout.readpartial(16384)
+                if RUBY_PLATFORM =~ /mswin|mingw/
+                  tmp_output = "" 
+                  while IO.select([stdout], nil, nil, 0.1)
+                    tmp = stdout.read(1)
+                    if tmp
+                      tmp_output += tmp
+                    else
+                      break
+                    end
+                  end
+                else
+                  tmp_output = stdout.readpartial(16384)
+                end
                 print tmp_output
                 output += tmp_output
               rescue EOFError 
-                tmp_output = stdout.read || ""
-                puts tmp_output
-                output += tmp_output
-                handles.reject! { |x| x == stdout }
               end
             end
           end

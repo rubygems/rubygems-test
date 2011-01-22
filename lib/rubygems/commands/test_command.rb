@@ -221,51 +221,39 @@ class Gem::Commands::TestCommand < Gem::Command
     [STDOUT, STDERR, $stdout, $stderr].map { |x| x.sync = true }
 
     Dir.chdir(spec.full_gem_path) do
-      reader_proc = proc do |orig_handles|
-        current_handles = orig_handles.dup
-
-        handles, _, _ = IO.select(current_handles, nil, nil, 0.1)
-        bufs = Hash.new { |h, k| h[k] = "" }
-
-        if handles
-          handles.compact.each do |io| 
-            begin
-              bufs[io] += io.readpartial(8)
-            rescue EOFError
-              bufs[io] += io.read rescue ""
-              current_handles.reject! { |x| x == io }
-            end
-          end 
-        end
-
-        [bufs, current_handles]
-      end
 
       outer_reader_proc = proc do |stdout, stderr|
-        stderr_buf = ""
+        current_handles = [stdout, stderr]
 
-        loop do
-          tmp_output = ""
-          handles = [stderr, stdout]
-          bufs, handles = reader_proc.call(handles)
+        while current_handles and !current_handles.compact.empty?
+          handles, _, _ = IO.select([stdout, stderr].reject(&:eof?), nil, nil, 0.001)
 
-          # hello mom, I've rewritten unix i/o and it probably sucks.
-          # basically, we only "flush" stderr on newline and stdout 
-          # "flushes" immediately. and by "flush" I mean "concatenates".
-          if bufs.has_key?(stderr)
-            stderr_buf += bufs[stderr] 
-            buf_ary = stderr_buf.split($/)
-            if buf_ary.length > 1
-              tmp_output += buf_ary[0..-2].join($/) + $/
-              stderr_buf = buf_ary[-1] 
+          if handles
+            if handles.include?(stderr)
+              begin
+                tmp_output = stderr.readline
+                print tmp_output
+                output += tmp_output
+              rescue EOFError
+                handles.reject! { |x| x == stderr }
+              end
+            end
+
+            if handles.include?(stdout)
+              begin
+                tmp_output = stdout.readpartial(16384)
+                print tmp_output
+                output += tmp_output
+              rescue EOFError 
+                tmp_output = stdout.read || ""
+                print tmp_output
+                output += tmp_output
+                handles.reject! { |x| x == stdout }
+              end
             end
           end
 
-          tmp_output += bufs[stdout] if bufs.has_key?(stdout)
-
-          print tmp_output
-          output += tmp_output
-          break if handles.empty?
+          current_handles = handles
         end
       end
 

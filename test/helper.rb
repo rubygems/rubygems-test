@@ -56,11 +56,31 @@ class Test::Unit::TestCase
     Gem.configuration.verbose = false
   end
 
+  def set_gem_temp_paths
+    @gem_temp_path = Dir.mktmpdir('rubygems-test')
+    @gem_home = Gem.dir
+    @gem_paths = Gem.path
+    Gem.clear_paths
+    Gem.path.replace [@gem_temp_path]
+    Gem.send :set_home, @gem_temp_path
+    Gem.refresh
+  end
+
+  def unset_gem_temp_paths
+    FileUtils.rm_rf @gem_temp_path if @gem_temp_path
+    Gem.clear_paths
+    Gem.path.replace [@gem_paths]
+    Gem.send :set_home, @gem_home
+    Gem.refresh
+  end
+
   def setup
     set_configuration({ })
+    set_gem_temp_paths
   end
 
   def teardown
     uninstall_stub_gem rescue nil
+    unset_gem_temp_paths
   end
 end

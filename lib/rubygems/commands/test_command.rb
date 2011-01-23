@@ -218,15 +218,8 @@ class Gem::Commands::TestCommand < Gem::Command
     output = ""
     exit_status = nil
 
-    [STDOUT, STDERR, $stdout, $stderr].map { |x| x.sync = true }
-
     Dir.chdir(spec.full_gem_path) do
-
       outer_reader_proc = proc do |stdout, stderr|
-
-        stdout.sync = true
-        stderr.sync = true
-
         while ![stdout, stderr].reject(&:eof?).empty?
           handles, _, _ = IO.select([stdout, stderr].reject(&:eof?), nil, nil, 0.1)
 
@@ -261,6 +254,10 @@ class Gem::Commands::TestCommand < Gem::Command
                 print tmp_output
                 output += tmp_output
               rescue EOFError 
+                tmp_output ||= ""
+                tmp_output += stdout.read rescue ""
+                print tmp_output
+                output += tmp_output
               end
             end
           end

@@ -249,6 +249,10 @@ class Gem::Commands::TestCommand < Gem::Command
             print tmp_output
             output += tmp_output
           rescue EOFError 
+            #
+            # This is another fix for readpartial wierdness on windows.
+            # EOFError is sometimes raised when the fd still has data.
+            #
             tmp_output ||= ""
             tmp_output += stdout.read rescue ""
             print tmp_output

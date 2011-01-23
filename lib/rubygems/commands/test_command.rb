@@ -309,6 +309,29 @@ class Gem::Commands::TestCommand < Gem::Command
     return output, exit_status
   end
 
+  #
+  # obtain the rake arguments for a specific platform and environment.
+  #
+  def get_rake_args(*rake_args)
+    rake_args_concatenator = proc do |ra|
+      ra.unshift(File.join(RbConfig::CONFIG["bindir"], 'ruby'))
+    end
+
+    case RUBY_PLATFORM
+    when /mingw/
+      rake_args_concatenator.call(rake_args)
+      rake_args = rake_args.join(' ')
+    when /mswin/
+      # if we don't run rake.bat (system rake for 1.9 as opposed to gems),
+      # run it with ruby.
+      if rake_args[0] =~ /rake$/
+        rake_args_concatenator.call(rake_args)
+      end
+    rake_args = rake_args.join(' ')
+    end
+
+    return rake_args
+  end
 
   #
   # Run the tests with the appropriate spec and rake_path, and capture all
@@ -316,24 +339,7 @@ class Gem::Commands::TestCommand < Gem::Command
   #
   def run_tests(spec, rake_path)
     Dir.chdir(spec.full_gem_path) do
-      rake_args = [rake_path, 'test', '--trace']
-
-      rake_args_concatenator = proc do |ra|
-        ra.unshift(File.join(RbConfig::CONFIG["bindir"], 'ruby'))
-      end
-
-      case RUBY_PLATFORM
-      when /mingw/
-        rake_args_concatenator.call(rake_args)
-        rake_args = rake_args.join(' ')
-      when /mswin/
-        # if we don't run rake.bat (system rake for 1.9 as opposed to gems),
-        # run it with ruby.
-        if rake_args[0] =~ /rake$/
-          rake_args_concatenator.call(rake_args)
-        end
-        rake_args = rake_args.join(' ')
-      end
+      rake_args = get_rake_args(rake_path, 'test', '--trace')
 
       output, exit_status = platform_reader(rake_args)
 

@@ -209,61 +209,109 @@ class Gem::Commands::TestCommand < Gem::Command
     }.to_yaml
   end
 
+  #
+  # Inner loop for platform_reader
+  #
+  def read_output(stdout, stderr)
+    output = ""
+
+    while ![stdout, stderr].reject(&:eof?).empty?
+      handles, _, _ = IO.select([stdout, stderr].reject(&:eof?), nil, nil, 0.1)
+
+      if handles
+        if handles.include?(stderr)
+          begin
+            tmp_output = stderr.readline
+            puts tmp_output
+            output += tmp_output
+          rescue EOFError
+          end
+        end
+
+        if handles.include?(stdout)
+          begin
+            # 
+            # readpartial seems to break on win32-open3's gem
+            #
+            if RUBY_PLATFORM =~ /mswin|mingw/ and RUBY_VERSION =~ /^1.8/
+              tmp_output = "" 
+              while IO.select([stdout], nil, nil, 0.1)
+                tmp = stdout.read(1)
+                if tmp
+                  tmp_output += tmp
+                else
+                  break
+                end
+              end
+            else
+              tmp_output = stdout.readpartial(16384)
+            end
+            print tmp_output
+            output += tmp_output
+          rescue EOFError 
+            tmp_output ||= ""
+            tmp_output += stdout.read rescue ""
+            print tmp_output
+            output += tmp_output
+          end
+        end
+      end
+    end
+
+    return output
+  end
+
+  #
+  # platform-specific reading routines.
+  #
+  def platform_reader(rake_args)
+    # jruby stuffs it under IO, so we'll use that if it's available
+    # if we're on 1.9, use open3 regardless of platform.
+    # If we're not:
+    #   * on windows use win32/open3 from win32-open3 gem
+    #   * on unix use open4-vendor
+
+    output, exit_status = nil, nil
+
+    if IO.respond_to?(:popen4)
+      IO.popen4(*rake_args) do |pid, stdin, stdout, stderr|
+        output = read_output(stdout, stderr)
+      end
+      exit_status = $?
+    elsif RUBY_VERSION > '1.9'
+      require 'open3'
+      exit_status = Open3.popen3(*rake_args) do |stdin, stdout, stderr, thr|
+        output = read_output(stdout, stderr)
+        thr.value
+      end
+    elsif RUBY_PLATFORM =~ /mingw|mswin/
+      begin
+        require 'win32/open3'
+        Open3.popen3(*rake_args) do |stdin, stdout, stderr|
+          output = read_output(stdout, stderr)
+        end
+        exit_status = $?
+      rescue LoadError
+        say "1.8/Windows users must install the 'win32-open3' gem to run tests"
+        terminate_interaction 1
+      end
+    else
+      require 'open4-vendor'
+      exit_status = Open4.popen4(*rake_args) do |pid, stdin, stdout, stderr|
+        output = read_output(stdout, stderr)
+      end
+    end
+
+    return output, exit_status
+  end
+
 
   #
   # Run the tests with the appropriate spec and rake_path, and capture all
   # output.
   #
   def run_tests(spec, rake_path)
-    output = ""
-    exit_status = nil
-
     Dir.chdir(spec.full_gem_path) do
-      outer_reader_proc = proc do |stdout, stderr|
-        while ![stdout, stderr].reject(&:eof?).empty?
-          handles, _, _ = IO.select([stdout, stderr].reject(&:eof?), nil, nil, 0.1)
-
-          if handles
-            if handles.include?(stderr)
-              begin
-                tmp_output = stderr.readline
-                puts tmp_output
-                output += tmp_output
-              rescue EOFError
-              end
-            end
-
-            if handles.include?(stdout)
-              begin
-                # 
-                # readpartial seems to break on win32-open3's gem
-                #
-                if RUBY_PLATFORM =~ /mswin|mingw/ and RUBY_VERSION =~ /^1.8/
-                  tmp_output = "" 
-                  while IO.select([stdout], nil, nil, 0.1)
-                    tmp = stdout.read(1)
-                    if tmp
-                      tmp_output += tmp
-                    else
-                      break
-                    end
-                  end
-                else
-                  tmp_output = stdout.readpartial(16384)
-                end
-                print tmp_output
-                output += tmp_output
-              rescue EOFError 
-                tmp_output ||= ""
-                tmp_output += stdout.read rescue ""
-                print tmp_output
-                output += tmp_output
-              end
-            end
-          end
-        end
-      end
-
       rake_args = [rake_path, 'test', '--trace']
 
       rake_args_concatenator = proc do |ra|
@@ -283,40 +331,7 @@ class Gem::Commands::TestCommand < Gem::Command
         rake_args = rake_args.join(' ')
       end
 
-      # jruby stuffs it under IO, so we'll use that if it's available
-      # if we're on 1.9, use open3 regardless of platform.
-      # If we're not:
-      #   * on windows use win32/open3 from win32-open3 gem
-      #   * on unix use open4-vendor
-      klass = 
-        if IO.respond_to?(:popen4)
-          IO.popen4(*rake_args) do |pid, stdin, stdout, stderr|
-            outer_reader_proc.call(stdout, stderr)
-          end
-          exit_status = $?
-        elsif RUBY_VERSION > '1.9'
-          require 'open3'
-          exit_status = Open3.popen3(*rake_args) do |stdin, stdout, stderr, thr|
-            outer_reader_proc.call(stdout, stderr)
-            thr.value
-          end
-        elsif RUBY_PLATFORM =~ /mingw|mswin/
-          begin
-            require 'win32/open3'
-            Open3.popen3(*rake_args) do |stdin, stdout, stderr|
-              outer_reader_proc.call(stdout, stderr)
-            end
-            exit_status = $?
-          rescue LoadError
-            say "1.8/Windows users must install the 'win32-open3' gem to run tests"
-            terminate_interaction 1
-          end
-        else
-          require 'open4-vendor'
-          exit_status = Open4.popen4(*rake_args) do |pid, stdin, stdout, stderr|
-            outer_reader_proc.call(stdout, stderr)
-          end
-        end
+      output, exit_status = platform_reader(rake_args)
 
       if upload_results?
         upload_results(gather_results(spec, output, exit_status.exitstatus == 0))

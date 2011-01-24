@@ -46,13 +46,7 @@ class TestExecute < Test::Unit::TestCase
     uninstall_stub_gem
   end
 
-  def test_06_find_rake
-    # XXX how do I test this fully without nuking rake?
-    assert_nothing_raised { @test.find_rake }
-    assert_not_nil @test.find_rake
-  end
-
-  def test_07_gather_results
+  def test_06_gather_results
     install_stub_gem({})
 
     spec = @test.find_gem("test-gem", "0.0.0")

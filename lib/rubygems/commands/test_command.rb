@@ -95,23 +95,27 @@ class Gem::Commands::TestCommand < Gem::Command
   # Locate rake itself, prefer gems version.
   #
   def find_rake
-
-    rake_finder = proc do |rake_name|
-      Gem.bin_path('rake') rescue File.join(RbConfig::CONFIG["bindir"], rake_name || 'rake')
-    end
-   
-    rake_path = rake_finder.call(nil)
-
-    unless File.exist?(rake_path)
-      rake_path = rake_finder.call('rake.bat')
-
-      unless File.exist?(rake_path)
+    begin
+      rake_path = Gem.bin_path('rake') 
+    rescue
+      unless RUBY_VERSION > '1.9'
         alert_error "Couldn't find rake; rubygems-test will not work without it. Aborting."
         raise Gem::RakeNotFoundError, "Couldn't find rake; rubygems-test will not work without it."
       end
     end
 
-    return rake_path
+    if RUBY_VERSION > '1.9'
+      if RUBY_PLATFORM =~ /mswin/
+        #
+        # XXX GarbageCollect breaks ruby -S with rake.
+        #
+        return File.join(RbConfig::CONFIG["bindir"], 'rake.bat')
+      else
+        return rake_path || 'rake'
+      end
+    else
+      return rake_path
+    end
   end
 
   #
@@ -312,25 +316,22 @@ class Gem::Commands::TestCommand < Gem::Command
   #
   # obtain the rake arguments for a specific platform and environment.
   #
-  def get_rake_args(*rake_args)
-    rake_args_concatenator = proc do |ra|
-      ra.unshift(File.join(RbConfig::CONFIG["bindir"], 'ruby'))
+  def get_rake_args(rake_path, *args)
+    if RUBY_PLATFORM =~ /mswin/
+      #
+      # XXX GarbageCollect breaks ruby -S with rake.
+      #
+     
+      rake_args = [ rake_path ] + args
+    else
+      rake_args = [ Gem.ruby, '-rubygems', '-S' ] + [ rake_path, '--' ] + args
     end
 
-    case RUBY_PLATFORM
-    when /mingw/
-      rake_args_concatenator.call(rake_args)
-      rake_args = rake_args.join(' ')
-    when /mswin/
-      # if we don't run rake.bat (system rake for 1.9 as opposed to gems),
-      # run it with ruby.
-      if rake_args[0] =~ /rake$/
-        rake_args_concatenator.call(rake_args)
-      end
-    rake_args = rake_args.join(' ')
+    if RUBY_PLATFORM =~ /mswin|mingw/
+      rake_args.join(' ')
+    else
+      rake_args
     end
-
-    return rake_args
   end
 
   #

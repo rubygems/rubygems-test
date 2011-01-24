@@ -95,23 +95,27 @@ class Gem::Commands::TestCommand < Gem::Command
   # Locate rake itself, prefer gems version.
   #
   def find_rake
-
-    rake_finder = proc do |rake_name|
-      Gem.bin_path('rake') rescue File.join(RbConfig::CONFIG["bindir"], rake_name || 'rake')
-    end
-   
-    rake_path = rake_finder.call(nil)
-
-    unless File.exist?(rake_path)
-      rake_path = rake_finder.call('rake.bat')
-
-      unless File.exist?(rake_path)
+    begin
+      rake_path = Gem.bin_path('rake') 
+    rescue
+      unless RUBY_VERSION > '1.9'
         alert_error "Couldn't find rake; rubygems-test will not work without it. Aborting."
         raise Gem::RakeNotFoundError, "Couldn't find rake; rubygems-test will not work without it."
       end
     end
 
-    return rake_path
+    if RUBY_VERSION > '1.9'
+      if RUBY_PLATFORM =~ /mswin/
+        #
+        # XXX GarbageCollect breaks ruby -S with rake.
+        #
+        return File.join(RbConfig::CONFIG["bindir"], 'rake.bat')
+      else
+        return rake_path || 'rake'
+      end
+    else
+      return rake_path
+    end
   end
 
   #
@@ -209,119 +213,136 @@ class Gem::Commands::TestCommand < Gem::Command
     }.to_yaml
   end
 
+  #
+  # Inner loop for platform_reader
+  #
+  def read_output(stdout, stderr)
+    output = ""
+
+    while ![stdout, stderr].reject(&:eof?).empty?
+      handles, _, _ = IO.select([stdout, stderr].reject(&:eof?), nil, nil, 0.1)
+
+      if handles
+        if handles.include?(stderr)
+          begin
+            tmp_output = stderr.readline
+            puts tmp_output
+            output += tmp_output
+          rescue EOFError
+          end
+        end
+
+        if handles.include?(stdout)
+          begin
+            # 
+            # readpartial seems to break on win32-open3's gem
+            #
+            if RUBY_PLATFORM =~ /mswin|mingw/ and RUBY_VERSION =~ /^1.8/
+              tmp_output = "" 
+              while IO.select([stdout], nil, nil, 0.1)
+                tmp = stdout.read(1)
+                if tmp
+                  tmp_output += tmp
+                else
+                  break
+                end
+              end
+            else
+              tmp_output = stdout.readpartial(16384)
+            end
+            print tmp_output
+            output += tmp_output
+          rescue EOFError 
+            #
+            # This is another fix for readpartial wierdness on windows.
+            # EOFError is sometimes raised when the fd still has data.
+            #
+            tmp_output ||= ""
+            tmp_output += stdout.read rescue ""
+            print tmp_output
+            output += tmp_output
+          end
+        end
+      end
+    end
+
+    return output
+  end
+
+  #
+  # platform-specific reading routines.
+  #
+  def platform_reader(rake_args)
+    # jruby stuffs it under IO, so we'll use that if it's available
+    # if we're on 1.9, use open3 regardless of platform.
+    # If we're not:
+    #   * on windows use win32/open3 from win32-open3 gem
+    #   * on unix use open4-vendor
+
+    output, exit_status = nil, nil
+
+    if IO.respond_to?(:popen4)
+      IO.popen4(*rake_args) do |pid, stdin, stdout, stderr|
+        output = read_output(stdout, stderr)
+      end
+      exit_status = $?
+    elsif RUBY_VERSION > '1.9'
+      require 'open3'
+      exit_status = Open3.popen3(*rake_args) do |stdin, stdout, stderr, thr|
+        output = read_output(stdout, stderr)
+        thr.value
+      end
+    elsif RUBY_PLATFORM =~ /mingw|mswin/
+      begin
+        require 'win32/open3'
+        Open3.popen3(*rake_args) do |stdin, stdout, stderr|
+          output = read_output(stdout, stderr)
+        end
+        exit_status = $?
+      rescue LoadError
+        say "1.8/Windows users must install the 'win32-open3' gem to run tests"
+        terminate_interaction 1
+      end
+    else
+      require 'open4-vendor'
+      exit_status = Open4.popen4(*rake_args) do |pid, stdin, stdout, stderr|
+        output = read_output(stdout, stderr)
+      end
+    end
+
+    return output, exit_status
+  end
+
+  #
+  # obtain the rake arguments for a specific platform and environment.
+  #
+  def get_rake_args(rake_path, *args)
+    if RUBY_PLATFORM =~ /mswin/
+      #
+      # XXX GarbageCollect breaks ruby -S with rake.
+      #
+     
+      rake_args = [ rake_path ] + args
+    else
+      rake_args = [ Gem.ruby, '-rubygems', '-S' ] + [ rake_path, '--' ] + args
+    end
+
+    if RUBY_PLATFORM =~ /mswin|mingw/
+      rake_args.join(' ')
+    else
+      rake_args
+    end
+  end
 
   #
   # Run the tests with the appropriate spec and rake_path, and capture all
   # output.
   #
   def run_tests(spec, rake_path)
-    output = ""
-    exit_status = nil
-
-    [STDOUT, STDERR, $stdout, $stderr].map { |x| x.sync = true }
-
     Dir.chdir(spec.full_gem_path) do
-      reader_proc = proc do |orig_handles|
-        current_handles = orig_handles.dup
+      rake_args = get_rake_args(rake_path, 'test', '--trace')
 
-        handles, _, _ = IO.select(current_handles, nil, nil, 0.1)
-        bufs = Hash.new { |h, k| h[k] = "" }
-
-        if handles
-          handles.compact.each do |io| 
-            begin
-              bufs[io] += io.readpartial(8)
-            rescue EOFError
-              bufs[io] += io.read rescue ""
-              current_handles.reject! { |x| x == io }
-            end
-          end 
-        end
-
-        [bufs, current_handles]
-      end
-
-      outer_reader_proc = proc do |stdout, stderr|
-        stderr_buf = ""
-
-        loop do
-          tmp_output = ""
-          handles = [stderr, stdout]
-          bufs, handles = reader_proc.call(handles)
-
-          # hello mom, I've rewritten unix i/o and it probably sucks.
-          # basically, we only "flush" stderr on newline and stdout 
-          # "flushes" immediately. and by "flush" I mean "concatenates".
-          if bufs.has_key?(stderr)
-            stderr_buf += bufs[stderr] 
-            buf_ary = stderr_buf.split($/)
-            if buf_ary.length > 1
-              tmp_output += buf_ary[0..-2].join($/) + $/
-              stderr_buf = buf_ary[-1] 
-            end
-          end
-
-          tmp_output += bufs[stdout] if bufs.has_key?(stdout)
-
-          print tmp_output
-          output += tmp_output
-          break if handles.empty?
-        end
-      end
-
-      rake_args = [rake_path, 'test', '--trace']
-
-      rake_args_concatenator = proc do |ra|
-        ra.unshift(File.join(RbConfig::CONFIG["bindir"], 'ruby'))
-      end
-
-      case RUBY_PLATFORM
-      when /mingw/
-        rake_args_concatenator.call(rake_args)
-        rake_args = rake_args.join(' ')
-      when /mswin/
-        # if we don't run rake.bat (system rake for 1.9 as opposed to gems),
-        # run it with ruby.
-        if rake_args[0] =~ /rake$/
-          rake_args_concatenator.call(rake_args)
-        end
-        rake_args = rake_args.join(' ')
-      end
-
-      # jruby stuffs it under IO, so we'll use that if it's available
-      # if we're on 1.9, use open3 regardless of platform.
-      # If we're not:
-      #   * on windows use win32/open3 from win32-open3 gem
-      #   * on unix use open4-vendor
-      klass = 
-        if IO.respond_to?(:popen4)
-          IO.popen4(*rake_args) do |pid, stdin, stdout, stderr|
-            outer_reader_proc.call(stdout, stderr)
-          end
-          exit_status = $?
-        elsif RUBY_VERSION > '1.9'
-          require 'open3'
-          exit_status = Open3.popen3(*rake_args) do |stdin, stdout, stderr, thr|
-            outer_reader_proc.call(stdout, stderr)
-            thr.value
-          end
-        elsif RUBY_PLATFORM =~ /mingw|mswin/
-          begin
-            require 'win32/open3'
-            Open3.popen3(*rake_args) do |stdin, stdout, stderr|
-              outer_reader_proc.call(stdout, stderr)
-            end
-            exit_status = $?
-          rescue LoadError
-            say "1.8/Windows users must install the 'win32-open3' gem to run tests"
-            terminate_interaction 1
-          end
-        else
-          require 'open4-vendor'
-          exit_status = Open4.popen4(*rake_args) do |pid, stdin, stdout, stderr|
-            outer_reader_proc.call(stdout, stderr)
-          end
-        end
+      output, exit_status = platform_reader(rake_args)
 
       if upload_results?
         upload_results(gather_results(spec, output, exit_status.exitstatus == 0))

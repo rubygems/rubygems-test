@@ -73,7 +73,7 @@ class Test::Unit::TestCase
     #
     # XXX Yep, big WTF here.
     #
-    if RUBY_PLATFORM =~ /java/
+    if RUBY_PLATFORM =~ /java|mingw/
       Gem.path.replace @gem_paths
     else
       Gem.path.replace [@gem_paths]

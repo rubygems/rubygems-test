@@ -328,7 +328,8 @@ class Gem::Commands::TestCommand < Gem::Command
     end
 
     if RUBY_PLATFORM =~ /mswin|mingw/
-      rake_args.join(' ')
+      require 'shellwords'
+      rake_args.map { |x| Shellwords.shellescape(x) }.join(' ')
     else
       rake_args
     end

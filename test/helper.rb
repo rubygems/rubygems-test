@@ -69,7 +69,15 @@ class Test::Unit::TestCase
   def unset_gem_temp_paths
     FileUtils.rm_rf @gem_temp_path if @gem_temp_path
     Gem.clear_paths
-    Gem.path.replace @gem_paths
+
+    #
+    # XXX Yep, big WTF here.
+    #
+    if RUBY_PLATFORM =~ /java/
+      Gem.path.replace @gem_paths
+    else
+      Gem.path.replace [@gem_paths]
+    end
     Gem.send :set_home, @gem_home
     Gem.refresh
   end

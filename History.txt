@@ -1,3 +1,13 @@
+=== 0.3.0 / 2011-01-30
+
+* More fixes for garbagecollect
+* Removed --trace. It was buggy and didn't work as expected.
+* Reworked I/O loop. Some testing to do still but it's looking good for most cases.
+* Fixed issue with on_install_test.rb, solves issue #11
+* Fixes for Rake; should be a little cleaner and run in a few more places.
+* Use temporary paths rather than system paths during tests. [James Tucker]
+* Clarify predicates.
+
 === 0.2.6 / 2011-01-15
 
 * Big refactor of rake locating to get running on mswin32

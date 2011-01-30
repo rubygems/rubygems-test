@@ -1,8 +1,8 @@
 .gemtest
-LICENSE
-README.txt
 History.txt
+LICENSE
 Manifest.txt
+README.txt
 Rakefile
 gems/Rakefile
 gems/template.gemspec

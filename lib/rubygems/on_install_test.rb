@@ -1,5 +1,5 @@
 Gem.autoload(:Uninstaller, 'rubygems/uninstaller')
-Gem.autoload(:Commands, 'rubygems/commands/test_command')
+require 'rubygems/commands/test_command'
 
 Gem.post_install do |gem|
   options = Gem.configuration["test_options"] || { }
@@ -9,7 +9,7 @@ Gem.post_install do |gem|
         gem.ui.ask_yes_no("Test #{gem.spec.name} (#{gem.spec.version})?", true)
 
       begin
-        Gem::Command::TestCommand.new(gem.spec, true).execute
+        Gem::Commands::TestCommand.new(gem.spec, true).execute
       rescue Gem::RakeNotFoundError, Gem::TestError
         if (options.has_key?("force_install") and !options["force_install"]) or
             options["force_uninstall_on_failure"] or

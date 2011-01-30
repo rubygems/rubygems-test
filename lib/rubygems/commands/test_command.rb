@@ -2,13 +2,12 @@ Gem.autoload(:VersionOption, 'rubygems/version_option')
 Gem.autoload(:Specification, 'rubygems/specification')
 Gem.autoload(:DefaultUserInteraction, 'rubygems/user_interaction')
 Gem.autoload(:DependencyInstaller, 'rubygems/dependency_installer')
+Gem.autoload(:RakeNotFoundError, 'exceptions')
+Gem.autoload(:TestError, 'exceptions')
 require 'rbconfig'
 autoload(:YAML, 'yaml')
 require 'net/http'
 require 'uri'
-
-class Gem::TestError < Gem::Exception; end
-class Gem::RakeNotFoundError < Gem::Exception; end
 
 class Gem::Commands::TestCommand < Gem::Command
   include Gem::VersionOption
@@ -217,53 +216,38 @@ class Gem::Commands::TestCommand < Gem::Command
   # Inner loop for platform_reader
   #
   def read_output(stdout, stderr)
+    require 'thread'
+
+    STDOUT.sync = true
+    STDERR.sync = true
+    stdout.sync = true
+    stderr.sync = true
+
     output = ""
+    mutex = Mutex.new
 
-    while ![stdout, stderr].reject(&:eof?).empty?
-      handles, _, _ = IO.select([stdout, stderr].reject(&:eof?), nil, nil, 0.1)
-
-      if handles
-        if handles.include?(stderr)
-          begin
-            tmp_output = stderr.readline
-            puts tmp_output
-            output += tmp_output
-          rescue EOFError
-          end
-        end
-
-        if handles.include?(stdout)
-          begin
-            # 
-            # readpartial seems to break on win32-open3's gem
-            #
-            if RUBY_PLATFORM =~ /mswin|mingw/ and RUBY_VERSION =~ /^1.8/
-              tmp_output = "" 
-              while IO.select([stdout], nil, nil, 0.1)
-                tmp = stdout.read(1)
-                if tmp
-                  tmp_output += tmp
-                else
-                  break
-                end
-              end
-            else
-              tmp_output = stdout.readpartial(16384)
-            end
-            print tmp_output
-            output += tmp_output
-          rescue EOFError 
-            #
-            # This is another fix for readpartial wierdness on windows.
-            # EOFError is sometimes raised when the fd still has data.
-            #
-            tmp_output ||= ""
-            tmp_output += stdout.read rescue ""
-            print tmp_output
-            output += tmp_output
-          end
+    err_t = Thread.new do
+      while !stderr.eof?
+        tmp = stderr.readline
+        mutex.synchronize do
+          output << tmp
+          print tmp
         end
       end
+    end
+
+    out_t = Thread.new do
+      while !stdout.eof?
+        tmp = stdout.read(1)
+        mutex.synchronize do
+          output << tmp
+          print tmp
+        end
+      end
+    end
+
+    while !stderr.eof? or !stdout.eof?
+      Thread.pass
     end
 
     return output
@@ -279,7 +263,7 @@ class Gem::Commands::TestCommand < Gem::Command
     #   * on windows use win32/open3 from win32-open3 gem
     #   * on unix use open4-vendor
 
-    output, exit_status = nil, nil
+    output, exit_status = *[]
 
     if IO.respond_to?(:popen4)
       IO.popen4(*rake_args) do |pid, stdin, stdout, stderr|
@@ -288,9 +272,9 @@ class Gem::Commands::TestCommand < Gem::Command
       exit_status = $?
     elsif RUBY_VERSION > '1.9'
       require 'open3'
-      exit_status = Open3.popen3(*rake_args) do |stdin, stdout, stderr, thr|
+      Open3.popen3(*rake_args) do |stdin, stdout, stderr, thr|
         output = read_output(stdout, stderr)
-        thr.value
+        exit_status = thr.value
       end
     elsif RUBY_PLATFORM =~ /mingw|mswin/
       begin

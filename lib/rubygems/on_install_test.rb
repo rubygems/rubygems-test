@@ -1,5 +1,7 @@
 Gem.autoload(:Uninstaller, 'rubygems/uninstaller')
-require 'rubygems/commands/test_command'
+Gem::Commands.autoload(:TestCommand, 'rubygems/commands/test_command')
+Gem.autoload(:RakeNotFoundError, 'exceptions')
+Gem.autoload(:TestError, 'exceptions')
 
 Gem.post_install do |gem|
   options = Gem.configuration["test_options"] || { }

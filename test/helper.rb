@@ -60,9 +60,15 @@ class Test::Unit::TestCase
     @gem_temp_path = Dir.mktmpdir('rubygems-test')
     @gem_home = Gem.dir
     @gem_paths = Gem.path
+
     Gem.clear_paths
-    Gem.path.replace [@gem_temp_path]
+    if Gem.path.kind_of?(String)
+      Gem.path.replace @gem_temp_path
+    else
+      Gem.path.replace [@gem_temp_path]
+    end
     Gem.send :set_home, @gem_temp_path
+
     Gem.refresh
   end
 
@@ -71,9 +77,9 @@ class Test::Unit::TestCase
     Gem.clear_paths
     
     if Gem.path.kind_of?(String)
-      Gem.path.replace @gem_paths
+      Gem.path.replace @gem_paths.join(File::PATH_SEPARATOR)
     else
-      Gem.path.replace [@gem_paths]
+      Gem.path.replace @gem_paths
     end
     Gem.send :set_home, @gem_home
     Gem.refresh

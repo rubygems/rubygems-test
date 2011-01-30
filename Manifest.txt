@@ -7,6 +7,7 @@ Rakefile
 gems/Rakefile
 gems/template.gemspec
 gems/test/test_pass.rb
+lib/exceptions.rb
 lib/open4-vendor.rb
 lib/rubygems/commands/test_command.rb
 lib/rubygems/on_install_test.rb

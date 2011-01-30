@@ -312,6 +312,7 @@ class Gem::Commands::TestCommand < Gem::Command
     end
 
     if RUBY_PLATFORM =~ /mswin|mingw/
+      # we don't use shellwords for the rest because they use execve().
       require 'shellwords'
       rake_args.map { |x| Shellwords.shellescape(x) }.join(' ')
     else
@@ -325,7 +326,7 @@ class Gem::Commands::TestCommand < Gem::Command
   #
   def run_tests(spec, rake_path)
     Dir.chdir(spec.full_gem_path) do
-      rake_args = get_rake_args(rake_path, 'test', '--trace')
+      rake_args = get_rake_args(rake_path, 'test')
 
       output, exit_status = platform_reader(rake_args)
 

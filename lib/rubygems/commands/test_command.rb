@@ -301,9 +301,9 @@ class Gem::Commands::TestCommand < Gem::Command
   # obtain the rake arguments for a specific platform and environment.
   #
   def get_rake_args(rake_path, *args)
-    if RUBY_PLATFORM =~ /mswin/
+    if RUBY_PLATFORM =~ /mswin/ and RUBY_VERSION > '1.9'
       #
-      # XXX GarbageCollect breaks ruby -S with rake.
+      # XXX GarbageCollect breaks ruby -S with rake on 1.9.
       #
      
       rake_args = [ rake_path ] + args

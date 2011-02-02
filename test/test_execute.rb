@@ -70,4 +70,15 @@ class TestExecute < Test::Unit::TestCase
 
     assert_equal YAML.load(@test.gather_results(spec, output, true)), hash
   end
+
+  def test_07_upload_results?
+    old_verbose = Gem.configuration.verbose
+
+    Gem.configuration.verbose = false
+    assert @test.upload_results?
+
+  ensure
+    Gem.configuration.verbose = old_verbose
+  end
+
 end

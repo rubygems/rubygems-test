@@ -350,7 +350,8 @@ class Gem::Commands::TestCommand < Gem::Command
       config["upload_results"] or
       (
         !config.has_key?("upload_results") and 
-          ask_yes_no("Upload these results?", true)
+        Gem.configuration.verbose == false ||
+        ask_yes_no("Upload these results?", true)
       )
     )
   end

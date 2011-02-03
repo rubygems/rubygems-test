@@ -131,7 +131,7 @@ class Gem::Commands::TestCommand < Gem::Command
 
     spec.development_dependencies.each do |dep|
       unless Gem.source_index.search(dep).last
-        if config["install_development_dependencies"]
+        if config["install_development_dependencies"] || Gem.configuration.verbose == false
           say "Installing test dependency #{dep.name} (#{dep.requirement})"
           di.install(dep) 
         else

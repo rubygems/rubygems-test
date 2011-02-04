@@ -27,8 +27,10 @@ Hoe.spec 'rubygems-test' do
   self.summary = 'commands and facilities for automated and user-contributed rubygems testing and reporting'
   self.url = %w[http://github.com/rubygems/rubygems-test]
   
-  require_ruby_version ">= 1.8.7"
   pluggable!
+
+  require_ruby_version ">= 1.8.7"
+  require_rubygems_version ">= 1.3.6"
 
   extra_deps << ['rake', '>= 0.8.7']
 

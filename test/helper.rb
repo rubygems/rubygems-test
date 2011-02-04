@@ -20,11 +20,17 @@ class Test::Unit::TestCase
     path = file.path
     file.close
 
-    FileUtils.chdir('gems') do
-      spec = eval File.read(path)
-      filename = Gem::Builder.new(spec).build
-      Gem::Installer.new(filename).install
-      Gem.refresh
+    Dir.mktmpdir('rubygems-test') do |dir|
+      FileUtils.chdir('gems') do
+        Dir['*'].each { |x| FileUtils.cp_r x, dir }
+      end
+
+      FileUtils.chdir(dir) do
+        spec = eval File.read(path)
+        filename = Gem::Builder.new(spec).build
+        Gem::Installer.new(filename).install
+        Gem.refresh
+      end
     end
   end
 

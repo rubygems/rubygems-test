@@ -166,7 +166,7 @@ class Gem::Commands::TestCommand < Gem::Command
         body = YAML::load(response.body)
         if body[:success]
           url = body[:data][0] if body[:data]
-          say "Test results posted successfully! \n\t#{url}"
+          say "\nTest results posted successfully! \n\nresults url:\t#{url}\n\n"
         else
           body[:errors].each do |error|
             say error

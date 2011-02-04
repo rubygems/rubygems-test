@@ -2,8 +2,7 @@
 
 * Formatted upload results output differently. Thanks postmodern.
 * Added a handy little message to tell people about the failure testing. Thanks Rick Hull.
-* Bumping version, not quite ready for release yet.
-* Should fix sudo issue now for good!
+* If sudo was required to install gems, 'gem test' without sudo would fail. Fixed.
 * Set minimum rubygems version; should solve #10.
 * Install development dependencies without prompt if in quiet mode [Guillermo Álvarez]
 * Ensure quiet mode does not ask any question. [Guillermo Álvarez]

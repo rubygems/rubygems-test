@@ -13,6 +13,8 @@ $LOAD_PATH.unshift(File.join(File.dirname(__FILE__), '..', 'lib'))
 
 require 'rubygems/commands/test_command' unless defined? Gem::Command::TestCommand
 
+$stderr.puts "----- ERROR messages are a part of this output. Do not be alarmed by them! -----"
+
 class Test::Unit::TestCase
   def install_stub_gem(hash)
     file = Tempfile.new("rubygems-test")

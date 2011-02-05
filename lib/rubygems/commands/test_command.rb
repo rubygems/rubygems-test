@@ -328,14 +328,23 @@ class Gem::Commands::TestCommand < Gem::Command
     Dir.chdir(spec.full_gem_path) do
       rake_args = get_rake_args(rake_path, 'test')
 
+      @trapped = false
+      ::Kernel.trap("INT") { @trapped = true } 
+
       output, exit_status = platform_reader(rake_args)
 
-      if upload_results?
+      ::Kernel.trap("INT", "DEFAULT")
+
+      if !@trapped and upload_results?
         upload_results(gather_results(spec, output, exit_status.exitstatus == 0))
       end
 
       if exit_status.exitstatus != 0
-        alert_error "Tests did not pass. Examine the output and report it to the author!"
+        if @trapped
+          alert_error "You interrupted the test! Test runs are not valid unless you let them complete!"
+        else
+          alert_error "Tests did not pass. Examine the output and report it to the author!"
+        end
 
         raise Gem::TestError, "tests failed"
       end

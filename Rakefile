@@ -6,13 +6,13 @@ require 'hoe'
 Hoe.plugins.delete :rubyforge
 Hoe.plugin :git
 
-Hoe.spec 'rubygems-test' do
+spec = Hoe.spec 'rubygems-test' do
   developer 'Erik Hollensbe', 'erik@hollensbe.org'
   developer 'Josiah Kiehl', 'bluepojo@gmail.com'
 
   # doin' it wrong because we're a gem plugin
   # that means I can be "special"!
-  self.version = '0.3.2'
+  self.version = '0.3.3'
   
   self.rubyforge_name = nil
 
@@ -35,9 +35,9 @@ Hoe.spec 'rubygems-test' do
   extra_deps << ['rake', '>= 0.8.7']
 
   desc "install a gem without sudo"
-  task :install => [:gem] do
-    sh "gem install pkg/#{self.name}-#{self.version}.gem"
-  end
 end
 
+task :install => [:package] do
+  sh "gem install pkg/#{spec.name}-#{spec.version}.gem"
+end
 # vim: syntax=ruby

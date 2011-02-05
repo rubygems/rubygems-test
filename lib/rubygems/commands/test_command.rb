@@ -202,7 +202,7 @@ class Gem::Commands::TestCommand < Gem::Command
       :machine_arch => RbConfig::CONFIG["target_cpu"],
       :name         => spec.name,
       :version      => {
-        :release      => spec.version.release.to_s,
+        :release      => spec.version.to_s,
         :prerelease   => spec.version.prerelease?
       },
       :platform     => (Kernel.const_get("RUBY_ENGINE") rescue "ruby"),

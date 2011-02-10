@@ -129,6 +129,7 @@ class Gem::Commands::TestCommand < Gem::Command
       di = Gem::DependencyInstaller.new
     end
 
+    $RG_T_INSTALLING_DEPENDENCIES = true
     spec.development_dependencies.each do |dep|
       unless Gem.source_index.search(dep).last
         if config["install_development_dependencies"] || Gem.configuration.verbose == false
@@ -145,6 +146,8 @@ class Gem::Commands::TestCommand < Gem::Command
         end
       end
     end
+    $RG_T_INSTALLING_DEPENDENCIES = false
+    true
   end
  
   #
@@ -394,9 +397,10 @@ class Gem::Commands::TestCommand < Gem::Command
           find_rakefile(spec)
           rake_path = find_rake
 
-          install_dependencies(spec)
-
-          run_tests(spec, rake_path)
+          unless $RG_T_INSTALLING_DEPENDENCIES and !config["test_development_dependencies"]
+            install_dependencies(spec)
+            run_tests(spec, rake_path)
+          end
         else
           say "Gem '#{name}' (version #{version}) needs to opt-in for testing."
           say ""

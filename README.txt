@@ -17,6 +17,7 @@ live in the 'test_options' subsection, e.g.:
     auto_test_on_install: true 
     test_on_install: true 
     install_development_dependencies: true
+    test_development_dependencies: false
     upload_results: false
     force_install: false
     force_uninstall_on_failure: false
@@ -29,6 +30,7 @@ The options:
 auto_test_on_install:: runs the unit tests when 'gem install' is invoked.
 test_on_install:: offer to test on install in general. 'auto_test_on_install' overrides this.
 install_development_dependencies:: automatically install the development dependencies when testing. This is recommended.
+test_development_dependencies:: recursively test dev dependencies installed by rubygems-test. This can significantly increase the time it takes to install a gem.
 upload_results:: upload results to http://gem-testers.org.
 upload_service_url:: Set to a URL, it will upload to that service instead.
 force_install:: always install, even on test failures.

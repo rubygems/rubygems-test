@@ -1,3 +1,7 @@
+=== 0.3.5 / 2011-02-11
+
+* rebuild of rubygems-test 0.3.4 on rubygems 1.5.2
+
 === 0.3.2 / 2011-02-05
 
 * Trap sigint and refuse to upload

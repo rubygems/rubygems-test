@@ -217,8 +217,17 @@ class Gem::Commands::TestCommand < Gem::Command
         ]
       end
 
+      p net_http_args
+
       http = Net::HTTP.new(*net_http_args)
-      response = Net::HTTP.post_form url, {:results => yaml}
+
+      if ENV["DEBUG_HTTP"]
+        http.set_debug_output($stderr)
+      end
+
+      req = Net::HTTP::Post.new(url.path)
+      req.set_form_data({:results => yaml})
+      response = http.start { |x| x.request(req) }
 
       case response
       when Net::HTTPSuccess

@@ -217,8 +217,6 @@ class Gem::Commands::TestCommand < Gem::Command
         ]
       end
 
-      p net_http_args
-
       http = Net::HTTP.new(*net_http_args)
 
       if ENV["DEBUG_HTTP"]

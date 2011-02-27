@@ -219,7 +219,7 @@ class Gem::Commands::TestCommand < Gem::Command
 
       http = Net::HTTP.new(*net_http_args)
 
-      if ENV["DEBUG_HTTP"]
+      if ENV["RG_T_DEBUG_HTTP"]
         http.set_debug_output($stderr)
       end
 

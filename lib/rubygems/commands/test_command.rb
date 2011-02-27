@@ -156,7 +156,7 @@ class Gem::Commands::TestCommand < Gem::Command
 
   def upload_results(yaml, results_url=nil)
     begin
-      results_url ||= config["upload_service_url"] || 'http://gem-testers.org/test_results' 
+      results_url ||= config["upload_service_url"] || 'http://test.rubygems.org/test_results' 
       url = URI.parse(results_url)
       response = Net::HTTP.post_form url, {:results => yaml}
     rescue Errno::ECONNREFUSED => e

@@ -149,6 +149,53 @@ class Gem::Commands::TestCommand < Gem::Command
     $RG_T_INSTALLING_DEPENDENCIES = false
     true
   end
+
+  ##
+  # Normalize the URI by adding "http://" if it is missing.
+  #
+  #--
+  #
+  # taken verbatim from rubygems.
+  #
+
+  def normalize_uri(uri)
+    (uri =~ /^(https?|ftp|file):/) ? uri : "http://#{uri}"
+  end
+ 
+  ##
+  # Escapes a URI.
+  #
+  #--
+  #
+  # Taken verbatim from rubygems.
+  #
+  def escape(str)
+    return nil unless str
+    URI.escape str
+  end
+
+  # 
+  # if a proxy is supplied, return a URI
+  # 
+  #--
+  #
+  # taken almost verbatim from rubygems.
+  #
+  def proxy
+    env_proxy = ENV['http_proxy'] || ENV['HTTP_PROXY']
+
+    return nil if env_proxy.nil? or env_proxy.empty?
+
+    uri = URI.parse(normalize_uri(env_proxy))
+
+    if uri and uri.user.nil? and uri.password.nil? then
+      # Probably we have http_proxy_* variables?
+      uri.user = escape(ENV['http_proxy_user'] || ENV['HTTP_PROXY_USER'])
+      uri.password = escape(ENV['http_proxy_pass'] || ENV['HTTP_PROXY_PASS'])
+    end
+
+    uri
+  end
  
   #
   # Upload +yaml+ Results to +results_url+.
@@ -158,12 +205,28 @@ class Gem::Commands::TestCommand < Gem::Command
     begin
       results_url ||= config["upload_service_url"] || 'http://test.rubygems.org/test_results' 
       url = URI.parse(results_url)
-      response = Net::HTTP.post_form url, {:results => yaml}
-    rescue Errno::ECONNREFUSED => e
-      say 'Unable to post test results. Can\'t connect to the results server.'
-    rescue => e
-      say e.message
-    else
+
+      net_http_args = [url.host, url.port]
+
+      if proxy_uri = proxy
+        net_http_args += [
+          proxy_uri.host,
+          proxy_uri.port,
+          proxy_uri.user,
+          proxy_uri.password
+        ]
+      end
+
+      http = Net::HTTP.new(*net_http_args)
+
+      if ENV["RG_T_DEBUG_HTTP"]
+        http.set_debug_output($stderr)
+      end
+
+      req = Net::HTTP::Post.new(url.path)
+      req.set_form_data({:results => yaml})
+      response = http.start { |x| x.request(req) }
+
       case response
       when Net::HTTPSuccess
         body = YAML::load(response.body)
@@ -191,6 +254,11 @@ class Gem::Commands::TestCommand < Gem::Command
       else
         say %q[Something weird happened. Probably a bug.]
       end
+    rescue Errno::ECONNREFUSED => e
+      say 'Unable to post test results. Can\'t connect to the results server.'
+    rescue => e
+      say e.message
+      say e.backtrace
     end
   end
 

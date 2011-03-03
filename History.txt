@@ -1,3 +1,11 @@
+=== 0.3.7 / 2011-03-02
+
+* Support for proxy environment variables. If it works on rubygems, it probably works here now too!
+
+=== 0.3.6 / 2011-02-27
+
+* Moved publish host default to test.rubygems.org
+
 === 0.3.5 / 2011-02-11
 
 * rebuild of rubygems-test 0.3.4 on rubygems 1.5.2

@@ -459,7 +459,7 @@ class Gem::Commands::TestCommand < Gem::Command
           next
         end
 
-        if spec.files.include?('.gemtest') or options[:force]
+        if File.join(spec.installation_path, '.gemtest') or options[:force]
           # we find rake and the rakefile first to eliminate needlessly installing
           # dependencies.
           find_rakefile(spec)

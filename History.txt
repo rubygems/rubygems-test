@@ -1,3 +1,7 @@
+=== 0.3.8 / 2011-03-03
+
+* Fix path handling due to changes on rubygems 1.6
+
 === 0.3.7 / 2011-03-02
 
 * Support for proxy environment variables. If it works on rubygems, it probably works here now too!

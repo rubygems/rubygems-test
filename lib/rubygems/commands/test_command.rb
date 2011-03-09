@@ -4,6 +4,7 @@ Gem.autoload(:DefaultUserInteraction, 'rubygems/user_interaction')
 Gem.autoload(:DependencyInstaller, 'rubygems/dependency_installer')
 Gem.autoload(:RakeNotFoundError, 'exceptions')
 Gem.autoload(:TestError, 'exceptions')
+Gem.autoload(:Installer, 'rubygems/installer')
 require 'rbconfig'
 autoload(:YAML, 'yaml')
 require 'net/http'
@@ -94,16 +95,20 @@ class Gem::Commands::TestCommand < Gem::Command
   # Locate rake itself, prefer gems version.
   #
   def find_rake
+    rake_path = nil;
+
     begin
       rake_path = Gem.bin_path('rake') 
     rescue
-      unless RUBY_VERSION > '1.9'
+      if RUBY_VERSION > '1.9' and File.exist?(File.join(RbConfig::CONFIG["bindir"], Gem::Installer.exec_format % 'rake'))
+        rake_path = File.join(RbConfig::CONFIG["bindir"], Gem::Installer.exec_format % 'rake')
+      else
         alert_error "Couldn't find rake; rubygems-test will not work without it. Aborting."
         raise Gem::RakeNotFoundError, "Couldn't find rake; rubygems-test will not work without it."
       end
     end
 
-    if RUBY_VERSION > '1.9'
+    if RUBY_VERSION > '1.9' and !rake_path
       if RUBY_PLATFORM =~ /mswin/
         #
         # XXX GarbageCollect breaks ruby -S with rake.

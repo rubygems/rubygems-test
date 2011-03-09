@@ -1,3 +1,7 @@
+=== 0.3.9 / 2011-03-08
+
+* Fix for a bug where rake19, etc would not be located.
+
 === 0.3.8 / 2011-03-03
 
 * Fix path handling due to changes on rubygems 1.6

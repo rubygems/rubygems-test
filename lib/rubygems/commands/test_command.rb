@@ -464,7 +464,7 @@ class Gem::Commands::TestCommand < Gem::Command
           next
         end
 
-        if File.exist?(File.join(spec.installation_path, '.gemtest')) or options[:force]
+        if File.exist?(File.join(spec.full_gem_path, '.gemtest')) or options[:force]
           # we find rake and the rakefile first to eliminate needlessly installing
           # dependencies.
           find_rakefile(spec)

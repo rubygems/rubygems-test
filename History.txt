@@ -1,3 +1,7 @@
+=== 0.3.10 / 2011-03-08
+
+* Fixed an issue locating the .gemtest file.
+
 === 0.3.9 / 2011-03-08
 
 * Fix for a bug where rake19, etc would not be located.

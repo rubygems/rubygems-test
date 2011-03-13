@@ -3,6 +3,10 @@
 require 'rubygems'
 require 'hoe'
 
+$:.unshift 'lib'
+require 'rubygems/command'
+require 'rubygems/commands/test_command'
+
 Hoe.plugins.delete :rubyforge
 Hoe.plugin :git
 
@@ -10,9 +14,7 @@ spec = Hoe.spec 'rubygems-test' do
   developer 'Erik Hollensbe', 'erik@hollensbe.org'
   developer 'Josiah Kiehl', 'bluepojo@gmail.com'
 
-  # doin' it wrong because we're a gem plugin
-  # that means I can be "special"!
-  self.version = '0.3.10'
+  self.version = Gem::Commands::TestCommand::VERSION
   
   self.rubyforge_name = nil
 

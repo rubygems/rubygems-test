@@ -14,6 +14,8 @@ class Gem::Commands::TestCommand < Gem::Command
   include Gem::VersionOption
   include Gem::DefaultUserInteraction
 
+  VERSION = "0.3.11"
+
   # taken straight out of rake
   DEFAULT_RAKEFILES = ['rakefile', 'Rakefile', 'rakefile.rb', 'Rakefile.rb']
 
@@ -284,7 +286,8 @@ class Gem::Commands::TestCommand < Gem::Command
       :platform     => (Kernel.const_get("RUBY_ENGINE") rescue "ruby"),
       :ruby_version => RUBY_VERSION,
       :result       => result,
-      :test_output  => output
+      :test_output  => output,
+      :rubygems_test_version => VERSION
     }.to_yaml
   end
 

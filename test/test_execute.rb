@@ -65,7 +65,8 @@ class TestExecute < Test::Unit::TestCase
         :prerelease => spec.version.prerelease?
       },
       :platform     => (Kernel.const_get("RUBY_ENGINE") rescue "ruby"),
-      :test_output  => output
+      :test_output  => output,
+      :rubygems_test_version => Gem::Commands::TestCommand::VERSION
     }
 
     assert_equal YAML.load(@test.gather_results(spec, output, true)), hash

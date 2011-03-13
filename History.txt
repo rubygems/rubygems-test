@@ -1,3 +1,7 @@
+=== 0.3.11 / 2011-03-13
+
+* Now sending :rubygems_test_version which is the version of rubygems-test used for the upload. 
+
 === 0.3.10 / 2011-03-08
 
 * Fixed an issue locating the .gemtest file.

@@ -100,7 +100,7 @@ class Gem::Commands::TestCommand < Gem::Command
     rake_path = nil;
 
     begin
-      rake_path = Gem.bin_path('rake') 
+      rake_path = Gem.bin_path('rake', 'rake')
     rescue
       if RUBY_VERSION > '1.9' and File.exist?(File.join(RbConfig::CONFIG["bindir"], Gem::Installer.exec_format % 'rake'))
         rake_path = File.join(RbConfig::CONFIG["bindir"], Gem::Installer.exec_format % 'rake')

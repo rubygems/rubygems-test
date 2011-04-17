@@ -1,3 +1,11 @@
+=== 0.4.0.rc1 / 2011-04-17
+
+* Pretty much nailed the reader problem to the wall.
+* Now able to test .gem files directly on the commandline.
+* Use the new hooks to uninstall gems if they fail testing. Bump the rubygems
+  requirement to 1.5 to reflect above changes.
+* Specify the exec_name for Gem.bin_path. [Postmodern]
+
 === 0.3.11 / 2011-03-13
 
 * Now sending :rubygems_test_version which is the version of rubygems-test used for the upload. 

@@ -81,5 +81,4 @@ class TestExecute < Test::Unit::TestCase
   ensure
     Gem.configuration.verbose = old_verbose
   end
-
 end

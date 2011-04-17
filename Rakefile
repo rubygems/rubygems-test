@@ -32,7 +32,7 @@ spec = Hoe.spec 'rubygems-test' do
   pluggable!
 
   require_ruby_version ">= 1.8.7"
-  require_rubygems_version ">= 1.3.6"
+  require_rubygems_version ">= 1.5.0"
 
   extra_deps << ['rake', '>= 0.8.7']
 

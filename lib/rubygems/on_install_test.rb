@@ -3,7 +3,7 @@ Gem::Commands.autoload(:TestCommand, 'rubygems/commands/test_command')
 Gem.autoload(:RakeNotFoundError, 'exceptions')
 Gem.autoload(:TestError, 'exceptions')
 
-Gem.post_install do |gem|
+Gem.post_build do |gem|
   options = Gem.configuration["test_options"] || { }
 
   if options["auto_test_on_install"] or options["test_on_install"]
@@ -17,8 +17,7 @@ Gem.post_install do |gem|
             options["force_uninstall_on_failure"] or
             gem.ui.ask_yes_no("Testing #{gem.spec.name} (#{gem.spec.version}) failed. Uninstall?", false)
 
-          # FIXME ask drbrain how to do this more better.
-          at_exit { Gem::Uninstaller.new(gem.spec.name, :version => gem.spec.version).uninstall }
+            false
         end
       end
     end

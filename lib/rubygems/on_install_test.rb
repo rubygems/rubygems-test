@@ -12,13 +12,13 @@ Gem.post_build do |gem|
 
       begin
         Gem::Commands::TestCommand.new(gem.spec, true).execute
+        true
       rescue Gem::RakeNotFoundError, Gem::TestError
-        if (options.has_key?("force_install") and !options["force_install"]) or
-            options["force_uninstall_on_failure"] or
-            gem.ui.ask_yes_no("Testing #{gem.spec.name} (#{gem.spec.version}) failed. Uninstall?", false)
-
-            false
-        end
+        !(
+          (options.has_key?("force_install") && !options["force_install"]) || 
+          options["force_uninstall_on_failure"] ||  
+          gem.ui.ask_yes_no("Testing #{gem.spec.name} (#{gem.spec.version}) failed. Uninstall?", false)
+         )
       end
     end
   end

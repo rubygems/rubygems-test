@@ -36,12 +36,16 @@ class TestExecute < Test::Unit::TestCase
   def test_05_find_rakefile
     install_stub_gem({ :files => ["Rakefile"] })
 
-    assert_nothing_raised { @test.find_rakefile(@test.find_gem("test-gem", "0.0.0")) }
+    spec = @test.find_gem('test-gem', '0.0.0')
+
+    assert_nothing_raised { @test.find_rakefile(spec.full_gem_path, spec) }
 
     uninstall_stub_gem
     install_stub_gem({ :files => "" })
 
-    assert_raises(Gem::RakeNotFoundError) { @test.find_rakefile(@test.find_gem("test-gem", "0.0.0")) }
+    spec = @test.find_gem('test-gem', '0.0.0')
+
+    assert_raises(Gem::RakeNotFoundError) { @test.find_rakefile(spec.full_gem_path, spec) }
 
     uninstall_stub_gem
   end

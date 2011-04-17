@@ -9,6 +9,7 @@ require 'rbconfig'
 autoload(:YAML, 'yaml')
 require 'net/http'
 require 'uri'
+require 'tempfile'
 
 class Gem::Commands::TestCommand < Gem::Command
   include Gem::VersionOption
@@ -82,9 +83,9 @@ class Gem::Commands::TestCommand < Gem::Command
   #
   # Locate the rakefile for a gem name and version
   #
-  def find_rakefile(spec)
+  def find_rakefile(path, spec)
     rakefile = DEFAULT_RAKEFILES.
-      map  { |x| File.join(spec.full_gem_path, x) }.
+      map  { |x| File.join(path, x) }.
       find { |x| File.exist?(x) }
 
     unless(File.exist?(rakefile) rescue nil)
@@ -403,8 +404,8 @@ class Gem::Commands::TestCommand < Gem::Command
   # Run the tests with the appropriate spec and rake_path, and capture all
   # output.
   #
-  def run_tests(spec, rake_path)
-    Dir.chdir(spec.full_gem_path) do
+  def run_tests(path, spec, rake_path)
+    Dir.chdir(path) do
       rake_args = get_rake_args(rake_path, 'test')
 
       @trapped = false
@@ -460,22 +461,42 @@ class Gem::Commands::TestCommand < Gem::Command
           terminate_interaction 1
         end
 
-        spec = find_gem(name, version)
+        path, spec = if name =~ /\.gem$/
+                       unless File.exist?(name)
+                         say "unable to find gem #{name}"
+                         next
+                       end
 
-        unless spec
-          say "unable to find gem #{name} #{version}"
-          next
-        end
+                       inst = Gem::Installer.new(name)
+                       tmpdir = Dir.mktmpdir
+                       @created_tmpdir = true
+                       inst.unpack(tmpdir)
+                       unless inst.spec.extensions.empty?
+                         say "gem #{name} has extensions. Due to limitations in rubygems,"
+                         say "the gem must be installed before it can be tested."
+                         next
+                       end
+                       [tmpdir, inst.spec]
+                     else
+                       spec = find_gem(name, version)
 
-        if File.exist?(File.join(spec.full_gem_path, '.gemtest')) or options[:force]
+                       unless spec
+                         say "unable to find gem #{name} #{version}"
+                         next
+                       end
+
+                       [spec.full_gem_path, spec]
+                     end
+
+        if File.exist?(File.join(path, '.gemtest')) or options[:force]
           # we find rake and the rakefile first to eliminate needlessly installing
           # dependencies.
-          find_rakefile(spec)
+          find_rakefile(path, spec)
           rake_path = find_rake
 
           unless $RG_T_INSTALLING_DEPENDENCIES and !config["test_development_dependencies"]
             install_dependencies(spec)
-            run_tests(spec, rake_path)
+            run_tests(path, spec, rake_path)
           end
         else
           say "Gem '#{name}' (version #{version}) needs to opt-in for testing."
@@ -492,8 +513,12 @@ class Gem::Commands::TestCommand < Gem::Command
           say "For more information, please see the rubygems-test README:"
           say "https://github.com/rubygems/rubygems-test/blob/master/README.txt"
         end
+
+        if @created_tmpdir
+          FileUtils.rm_rf path
+        end
       end
-    rescue Gem::TestError
+    rescue Gem::TestError => e
       raise if @on_install
       terminate_interaction 1
     end

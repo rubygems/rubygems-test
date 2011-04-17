@@ -15,7 +15,7 @@ class Gem::Commands::TestCommand < Gem::Command
   include Gem::VersionOption
   include Gem::DefaultUserInteraction
 
-  VERSION = "0.4.0"
+  VERSION = "0.4.0.rc1"
 
   # taken straight out of rake
   DEFAULT_RAKEFILES = ['rakefile', 'Rakefile', 'rakefile.rb', 'Rakefile.rb']
@@ -298,39 +298,60 @@ class Gem::Commands::TestCommand < Gem::Command
   def read_output(stdout, stderr)
     require 'thread'
 
-    STDOUT.sync = true
-    STDERR.sync = true
-    stdout.sync = true
-    stderr.sync = true
+    [STDERR, $stderr, stderr, STDOUT, $stdout, stdout].map { |x| x.sync = true }
 
+    reads = Queue.new
     output = ""
-    mutex = Mutex.new
 
     err_t = Thread.new do
       while !stderr.eof?
-        tmp = stderr.readline
-        mutex.synchronize do
-          output << tmp
-          print tmp
-        end
+        ary = [:stderr, nil, stderr.readline]
+        ary[1] = Time.now.to_f
+        reads << ary
       end
     end
 
     out_t = Thread.new do
       while !stdout.eof?
-        tmp = stdout.read(1)
-        mutex.synchronize do
-          output << tmp
-          print tmp
+        ary = [:stdout, nil, stdout.read(1)]
+        ary[1] = Time.now.to_f
+        reads << ary
+      end
+    end
+
+    tty_t = Thread.new do
+      next_time = nil
+      while true 
+        while reads.length > 0
+          cur_reads = [next_time || reads.shift]
+
+          time = cur_reads[0][1]
+
+          while next_time = reads.shift
+            break if next_time[1] != time
+            cur_reads << next_time
+          end
+
+          stderr_reads, stdout_reads = cur_reads.partition { |x| x[0] == :stderr }
+
+          # stderr wins
+          (stderr_reads + stdout_reads).each do |rec|
+            output << rec[2]
+            print rec[2]
+          end
         end
       end
     end
 
-    while !stderr.eof? or !stdout.eof?
+    while !stderr.eof? or !stdout.eof? or !reads.empty?
       Thread.pass
     end
 
-    return output
+    sleep 1
+    tty_t.kill 
+    puts
+
+    return output + "\n"
   end
 
   #

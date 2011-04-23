@@ -1,3 +1,7 @@
+=== 0.4.0 / 2011-04-23
+
+* Make rc1 official 0.4.0
+
 === 0.4.0.rc1 / 2011-04-17
 
 * Pretty much nailed the reader problem to the wall.

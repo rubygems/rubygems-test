@@ -32,7 +32,7 @@ class Gem::Commands::TestCommand < Gem::Command
     "#{program_name} GEM [-v VERSION] [--force] [--dep-user-install]"
   end
   
-  def initialize(spec=nil, on_install=false)
+  def initialize(spec=nil, on_install=false, gem_dir=nil)
     options = { } 
 
     if spec
@@ -40,6 +40,8 @@ class Gem::Commands::TestCommand < Gem::Command
       options[:version] = spec.version
     end
 
+    @spec = spec
+    @gem_dir = gem_dir
     @on_install = on_install
 
     super 'test', description, options
@@ -499,14 +501,20 @@ class Gem::Commands::TestCommand < Gem::Command
                        end
                        [tmpdir, inst.spec]
                      else
-                       spec = find_gem(name, version)
 
-                       unless spec
-                         say "unable to find gem #{name} #{version}"
-                         next
+                       if @spec and @gem_dir and File.directory?(@gem_dir)
+                         [@gem_dir, @spec]
+                       else
+
+                        spec = find_gem(name, version)
+
+                        unless spec
+                          say "unable to find gem #{name} #{version}"
+                          next
+                        end
+
+                        [spec.full_gem_path, spec]
                        end
-
-                       [spec.full_gem_path, spec]
                      end
 
         if File.exist?(File.join(path, '.gemtest')) or options[:force]

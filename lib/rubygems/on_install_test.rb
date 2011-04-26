@@ -11,7 +11,8 @@ Gem.post_build do |gem|
         gem.ui.ask_yes_no("Test #{gem.spec.name} (#{gem.spec.version})?", true)
 
       begin
-        Gem::Commands::TestCommand.new(gem.spec, true).execute
+        # HACK: request gem_dir be exposed in rubygems
+        Gem::Commands::TestCommand.new(gem.spec, true, gem.instance_variable_get(:@gem_dir) || gem.instance_variable_get("@gem_dir")).execute
         true
       rescue Gem::RakeNotFoundError, Gem::TestError
         !(

@@ -64,6 +64,16 @@ class Test::Unit::TestCase
     Gem.configuration.verbose = false
   end
 
+  def set_paths
+    if Gem::VERSION > '1.8'
+      Gem.paths = { :home => @gem_temp_path }
+    else
+      Gem.send :set_home, @gem_temp_path
+    end
+
+    Gem.refresh
+  end
+
   def set_gem_temp_paths
     @gem_temp_path = Dir.mktmpdir('rubygems-test')
     @gem_home = Gem.dir
@@ -75,9 +85,8 @@ class Test::Unit::TestCase
     else
       Gem.path.replace [@gem_temp_path]
     end
-    Gem.send :set_home, @gem_temp_path
 
-    Gem.refresh
+    set_paths
   end
 
   def unset_gem_temp_paths
@@ -89,8 +98,8 @@ class Test::Unit::TestCase
     else
       Gem.path.replace @gem_paths
     end
-    Gem.send :set_home, @gem_home
-    Gem.refresh
+
+    set_paths
   end
 
   def setup

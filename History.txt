@@ -1,3 +1,7 @@
+=== 0.4.2 / 2011-05-09
+
+* Fix operation on 1.8.x
+
 === 0.4.1 / 2011-04-26
 
 * Fix for situations during on-install testing where the gem dir is not available (f.e., on a new installation)

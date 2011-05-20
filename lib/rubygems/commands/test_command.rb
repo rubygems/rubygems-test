@@ -15,7 +15,7 @@ class Gem::Commands::TestCommand < Gem::Command
   include Gem::VersionOption
   include Gem::DefaultUserInteraction
 
-  VERSION = "0.4.2"
+  VERSION = "0.4.3"
 
   # taken straight out of rake
   DEFAULT_RAKEFILES = ['rakefile', 'Rakefile', 'rakefile.rb', 'Rakefile.rb']
@@ -310,6 +310,7 @@ class Gem::Commands::TestCommand < Gem::Command
         ary = [:stderr, nil, stderr.readline]
         ary[1] = Time.now.to_f
         reads << ary
+        Thread.pass
       end
     end
 
@@ -318,6 +319,7 @@ class Gem::Commands::TestCommand < Gem::Command
         ary = [:stdout, nil, stdout.read(1)]
         ary[1] = Time.now.to_f
         reads << ary
+        Thread.pass
       end
     end
 
@@ -342,6 +344,7 @@ class Gem::Commands::TestCommand < Gem::Command
             print rec[2]
           end
         end
+        Thread.pass
       end
     end
 

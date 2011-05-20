@@ -1,3 +1,7 @@
+=== 0.4.3 / 2011-05-20
+
+* Thread.pass in a few spots fixes hangs on linux. Version bump
+
 === 0.4.2 / 2011-05-09
 
 * Fix operation on 1.8.x
